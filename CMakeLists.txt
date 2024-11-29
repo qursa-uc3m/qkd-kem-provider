@@ -67,6 +67,11 @@ get_target_property(LIBOQS_LIBRARY_TYPE OQS::oqs TYPE)
 message(STATUS "liboqs found: Include dir at ${LIBOQS_INCLUDE_DIR} (${LIBOQS_LIBRARY_TYPE})")
 include_directories(${LIBOQS_INCLUDE_DIR})
 
+# Add required include for qkd-etsi-api
+find_library(QKD_ETSI_API_LIB NAMES qkd-etsi-api PATHS /usr/local/lib REQUIRED)
+include_directories(/usr/local/include/qkd-etsi-api)
+message(STATUS "QKD ETSI API found: ${QKD_ETSI_API_LIB}")
+
 # Hints the compiler on the fact that the provider is being compiled into a static library.
 function(targets_set_static_provider)
   foreach(target ${ARGN})

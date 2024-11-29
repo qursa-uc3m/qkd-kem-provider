@@ -19,6 +19,7 @@
 
 #include "openssl/param_build.h"
 #include "oqs_prov.h"
+#include <qkd-etsi-api/api.h>
 
 // stolen from openssl/crypto/param_build_set.c as
 // ossl_param_build_set_octet_string not public API:
@@ -108,21 +109,56 @@ static int oqsx_has(const void *keydata, int selection) {
 /* Sets the index of the key components in a comp_privkey or comp_pubkey array
  */
 static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
-                              int *idx_pq) {
+                              int *idx_pq, int *idx_qkd) {
+    //TODO_QKD: put in a shared file with oqs_kmgmt.c and oqsprov_keys.c
     int reverse_share = (key->keytype == KEY_TYPE_ECP_HYB_KEM ||
                          key->keytype == KEY_TYPE_ECX_HYB_KEM) &&
                         key->reverse_share;
 
-    if (reverse_share) {
-        if (idx_classic)
-            *idx_classic = key->numkeys - 1;
-        if (idx_pq)
-            *idx_pq = 0;
+    if (idx_qkd) {
+        // QKD is always last
+        *idx_qkd = key->numkeys - 1;
+    }
+    if (key->keytype == KEY_TYPE_QKD_HYB_KEM) {
+        // In QKD hybrid case
+        if (key->numkeys == 2) {
+            // PQC + QKD hybrid
+            if (idx_classic)
+                *idx_classic = -1;  // No classical component
+            if (idx_pq)
+                *idx_pq = 0;        // PQ at index 0, QKD at index 1
+        //TODO_QKD: implement the triple hybrid case
+        } else if (key->numkeys == 3) {
+            // Classical + PQC + QKD triple hybrid
+            if (reverse_share) {
+                // PQ, Classical, QKD order
+                if (idx_classic)
+                    *idx_classic = 1;
+                if (idx_pq)
+                    *idx_pq = 0;
+            } else {
+                // Classical, PQ, QKD order
+                if (idx_classic)
+                    *idx_classic = 0;
+                if (idx_pq)
+                    *idx_pq = 1;
+            }
+        }
     } else {
-        if (idx_classic)
-            *idx_classic = 0;
-        if (idx_pq)
-            *idx_pq = key->numkeys - 1;
+        // Regular hybrid cases (no QKD)
+        if (reverse_share) {
+            if (idx_classic)
+                *idx_classic = key->numkeys - 1;
+            if (idx_pq)
+                *idx_pq = 0;
+        } else {
+            if (idx_classic)
+                *idx_classic = 0;
+            if (idx_pq)
+                *idx_pq = key->numkeys - 1;
+        }
+        if (idx_qkd)
+            *idx_qkd = -1;  // No QKD component
     }
 }
 
@@ -333,7 +369,9 @@ err:
         OSSL_PARAM_octet_string(OQS_HYBRID_PKEY_PARAM_CLASSICAL_PRIV_KEY,      \
                                 NULL, 0),                                      \
         OSSL_PARAM_octet_string(OQS_HYBRID_PKEY_PARAM_PQ_PUB_KEY, NULL, 0),    \
-        OSSL_PARAM_octet_string(OQS_HYBRID_PKEY_PARAM_PQ_PRIV_KEY, NULL, 0)
+        OSSL_PARAM_octet_string(OQS_HYBRID_PKEY_PARAM_PQ_PRIV_KEY, NULL, 0),    \
+        OSSL_PARAM_octet_string(OQS_HYBRID_PKEY_PARAM_QKD_PUB_KEY, NULL, 0),   \
+        OSSL_PARAM_octet_string(OQS_HYBRID_PKEY_PARAM_QKD_PRIV_KEY, NULL, 0)
 
 #define OQS_KEY_TYPES()                                                        \
     OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_PUB_KEY, NULL, 0),                 \
@@ -353,13 +391,46 @@ static const OSSL_PARAM *oqs_imexport_types(int selection) {
 //
 // Returns 1 if hybrid, else 0.
 static int oqsx_key_is_hybrid(const OQSX_KEY *oqsxk) {
-    if ((oqsxk->keytype == KEY_TYPE_ECP_HYB_KEM ||
-         oqsxk->keytype == KEY_TYPE_ECX_HYB_KEM ||
-         oqsxk->keytype == KEY_TYPE_HYB_SIG) &&
-        oqsxk->numkeys == 2 && oqsxk->classical_pkey != NULL) {
-        OQS_KM_PRINTF("OQSKEYMGMT: key is hybrid\n");
-        return 1;
+    if (!oqsxk) return 0;
+    //TODO_QKD: handle this properly
+    // Check key type first
+    int is_hybrid_type = (oqsxk->keytype == KEY_TYPE_ECP_HYB_KEM ||
+                         oqsxk->keytype == KEY_TYPE_ECX_HYB_KEM ||
+                         oqsxk->keytype == KEY_TYPE_HYB_SIG ||
+                         oqsxk->keytype == KEY_TYPE_QKD_HYB_KEM);
+    
+    if (!is_hybrid_type) return 0;
+
+    // Now handle different hybrid scenarios
+    switch (oqsxk->keytype) {
+        case KEY_TYPE_ECP_HYB_KEM:
+        case KEY_TYPE_ECX_HYB_KEM:
+        case KEY_TYPE_HYB_SIG:
+            // Traditional hybrid: needs classical key and 2 components
+            if (oqsxk->numkeys == 2 && oqsxk->classical_pkey != NULL) {
+                OQS_KM_PRINTF("OQSKEYMGMT: key is traditional hybrid\n");
+                return 1;
+            }
+            break;
+
+        case KEY_TYPE_QKD_HYB_KEM:
+            // QKD hybrid cases
+            if (oqsxk->numkeys == 2) {
+                // PQC + QKD hybrid
+                OQS_KM_PRINTF("OQSKEYMGMT: key is PQC+QKD hybrid\n");
+                return 1;
+            }
+            if (oqsxk->numkeys == 3 && oqsxk->classical_pkey != NULL) {
+                // Triple hybrid (Classical + PQC + QKD)
+                OQS_KM_PRINTF("OQSKEYMGMT: key is triple hybrid (Classical+PQC+QKD)\n");
+                return 1;
+            }
+            break;
+
+        default:
+            break;
     }
+
     return 0;
 }
 
@@ -374,11 +445,13 @@ static int oqsx_get_hybrid_params(OQSX_KEY *key, OSSL_PARAM params[]) {
     const void *classical_privkey = NULL;
     const void *pq_pubkey = NULL;
     const void *pq_privkey = NULL;
+    const void *qkd_pubkey = NULL;
+    const void *qkd_privkey = NULL;
     uint32_t classical_pubkey_len = 0;
     uint32_t classical_privkey_len = 0;
     int pq_pubkey_len = 0;
     int pq_privkey_len = 0;
-    int idx_classic, idx_pq;
+    int idx_classic, idx_pq, idx_qkd;
 
     if (oqsx_key_is_hybrid(key) != 1)
         return 0;
@@ -390,46 +463,75 @@ static int oqsx_get_hybrid_params(OQSX_KEY *key, OSSL_PARAM params[]) {
         return -1;
     }
 
-    oqsx_comp_set_idx(key, &idx_classic, &idx_pq);
 
-    if (key->comp_pubkey != NULL && key->pubkey != NULL &&
-        key->comp_pubkey[idx_classic] != NULL) {
-        classical_pubkey = key->comp_pubkey[idx_classic];
-        DECODE_UINT32(classical_pubkey_len, key->pubkey);
-    }
-    if (key->comp_privkey != NULL && key->privkey != NULL &&
-        key->comp_privkey[idx_classic] != NULL) {
-        classical_privkey = key->comp_privkey[idx_classic];
-        DECODE_UINT32(classical_privkey_len, key->privkey);
-    }
+    oqsx_comp_set_idx(key, &idx_classic, &idx_pq, &idx_qkd);
 
-    if (key->comp_pubkey != NULL && key->comp_pubkey[idx_pq] != NULL) {
-        pq_pubkey = key->comp_pubkey[idx_pq];
-        pq_pubkey_len = key->pubkeylen - classical_pubkey_len - SIZE_OF_UINT32;
-    }
-    if (key->comp_privkey != NULL && key->comp_privkey != NULL) {
-        pq_privkey = key->comp_privkey[idx_pq];
-        pq_privkey_len =
-            key->privkeylen - classical_privkey_len - SIZE_OF_UINT32;
+    // Get classical component if present (idx_classic >= 0)
+    if (idx_classic >= 0) {
+        if (key->comp_pubkey != NULL && key->pubkey != NULL &&
+            key->comp_pubkey[idx_classic] != NULL) {
+            classical_pubkey = key->comp_pubkey[idx_classic];
+            DECODE_UINT32(classical_pubkey_len, key->pubkey);
+        }
+        if (key->comp_privkey != NULL && key->privkey != NULL &&
+            key->comp_privkey[idx_classic] != NULL) {
+            classical_privkey = key->comp_privkey[idx_classic];
+            DECODE_UINT32(classical_privkey_len, key->privkey);
+        }
     }
 
-    if ((p = OSSL_PARAM_locate(
-             params, OQS_HYBRID_PKEY_PARAM_CLASSICAL_PUB_KEY)) != NULL &&
-        !OSSL_PARAM_set_octet_string(p, classical_pubkey, classical_pubkey_len))
-        return -1;
-    if ((p = OSSL_PARAM_locate(
-             params, OQS_HYBRID_PKEY_PARAM_CLASSICAL_PRIV_KEY)) != NULL &&
-        !OSSL_PARAM_set_octet_string(p, classical_privkey,
-                                     classical_privkey_len))
-        return -1;
-    if ((p = OSSL_PARAM_locate(params, OQS_HYBRID_PKEY_PARAM_PQ_PUB_KEY)) !=
-            NULL &&
-        !OSSL_PARAM_set_octet_string(p, pq_pubkey, pq_pubkey_len))
-        return -1;
-    if ((p = OSSL_PARAM_locate(params, OQS_HYBRID_PKEY_PARAM_PQ_PRIV_KEY)) !=
-            NULL &&
-        !OSSL_PARAM_set_octet_string(p, pq_privkey, pq_privkey_len))
-        return -1;
+    // Get PQ component if present (idx_pq >= 0)
+    if (idx_pq >= 0) {
+        if (key->comp_pubkey != NULL && key->comp_pubkey[idx_pq] != NULL) {
+            pq_pubkey = key->comp_pubkey[idx_pq];
+            pq_pubkey_len = key->pubkeylen - classical_pubkey_len - SIZE_OF_UINT32;
+        }
+        if (key->comp_privkey != NULL && key->comp_privkey != NULL) {
+            pq_privkey = key->comp_privkey[idx_pq];
+            pq_privkey_len =
+                key->privkeylen - classical_privkey_len - SIZE_OF_UINT32;
+        }
+    }
+
+    // Get QKD component if present (idx_qkd >= 0)
+    if (idx_qkd >= 0) {
+        if (key->comp_pubkey != NULL && key->comp_pubkey[idx_qkd] != NULL) {
+            qkd_pubkey = key->comp_pubkey[idx_qkd];
+        }
+        if (key->comp_privkey != NULL && key->comp_privkey[idx_qkd] != NULL) {
+            qkd_privkey = key->comp_privkey[idx_qkd];
+        }
+    }
+
+    if (idx_classic >= 0) {
+        if ((p = OSSL_PARAM_locate(
+                params, OQS_HYBRID_PKEY_PARAM_CLASSICAL_PUB_KEY)) != NULL &&
+            !OSSL_PARAM_set_octet_string(p, classical_pubkey, classical_pubkey_len))
+            return -1;
+        if ((p = OSSL_PARAM_locate(
+                params, OQS_HYBRID_PKEY_PARAM_CLASSICAL_PRIV_KEY)) != NULL &&
+            !OSSL_PARAM_set_octet_string(p, classical_privkey,
+                                        classical_privkey_len))
+            return -1;
+    }
+    if (idx_pq >= 0) {
+        if ((p = OSSL_PARAM_locate(params, OQS_HYBRID_PKEY_PARAM_PQ_PUB_KEY)) !=
+                NULL &&
+            !OSSL_PARAM_set_octet_string(p, pq_pubkey, pq_pubkey_len))
+            return -1;
+        if ((p = OSSL_PARAM_locate(params, OQS_HYBRID_PKEY_PARAM_PQ_PRIV_KEY)) !=
+                NULL &&
+            !OSSL_PARAM_set_octet_string(p, pq_privkey, pq_privkey_len))
+            return -1;
+    }
+    if (idx_qkd >= 0) {
+        if ((p = OSSL_PARAM_locate(params, OQS_HYBRID_PKEY_PARAM_QKD_PUB_KEY)) != NULL &&
+            !OSSL_PARAM_set_octet_string(p, qkd_pubkey, QKD_KSID_SIZE))
+            return -1;
+        if ((p = OSSL_PARAM_locate(params, OQS_HYBRID_PKEY_PARAM_QKD_PRIV_KEY)) != NULL &&
+            !OSSL_PARAM_set_octet_string(p, qkd_privkey, QKD_KSID_SIZE))
+            return -1;
+    }
 
     return 0;
 }
@@ -471,6 +573,7 @@ static int oqsx_get_params(void *key, OSSL_PARAM params[]) {
         NULL) {
         // hybrid KEMs are special in that the classic length information
         // shall not be passed out:
+        //TODO_QKD: check if we should add specific handling for QKD
         if (oqsxk->keytype == KEY_TYPE_ECP_HYB_KEM ||
             oqsxk->keytype == KEY_TYPE_ECX_HYB_KEM) {
             if (!OSSL_PARAM_set_octet_string(
@@ -1394,6 +1497,44 @@ static void *CROSSrsdp128balanced_gen_init(void *provctx, int selection) {
         {OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))oqsx_load},                   \
         {0, NULL}};
 
+#define MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(tokalg, tokoqsalg, bit_security)        \
+                                                                               \
+    static void *qkd_##tokalg##_new_key(void *provctx) {                      \
+        return oqsx_key_new(PROV_OQS_LIBCTX_OF(provctx), tokoqsalg,          \
+                          "" #tokalg "", KEY_TYPE_QKD_HYB_KEM, NULL,          \
+                          bit_security, -1, 0);                                \
+    }                                                                         \
+                                                                               \
+    static void *qkd_##tokalg##_gen_init(void *provctx, int selection) {      \
+        return oqsx_gen_init(provctx, selection, tokoqsalg, "" #tokalg "",    \
+                           KEY_TYPE_QKD_HYB_KEM, bit_security, -1, 0);        \
+    }                                                                         \
+                                                                               \
+    const OSSL_DISPATCH oqs_qkd_##tokalg##_keymgmt_functions[] = {            \
+        {OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))qkd_##tokalg##_new_key},     \
+        {OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))oqsx_key_free},             \
+        {OSSL_FUNC_KEYMGMT_GET_PARAMS, (void (*)(void))oqsx_get_params},     \
+        {OSSL_FUNC_KEYMGMT_SETTABLE_PARAMS,                                  \
+         (void (*)(void))oqsx_settable_params},                              \
+        {OSSL_FUNC_KEYMGMT_GETTABLE_PARAMS,                                  \
+         (void (*)(void))oqs_gettable_params},                               \
+        {OSSL_FUNC_KEYMGMT_SET_PARAMS, (void (*)(void))oqsx_set_params},     \
+        {OSSL_FUNC_KEYMGMT_HAS, (void (*)(void))oqsx_has},                   \
+        {OSSL_FUNC_KEYMGMT_MATCH, (void (*)(void))oqsx_match},               \
+        {OSSL_FUNC_KEYMGMT_IMPORT, (void (*)(void))oqsx_import},             \
+        {OSSL_FUNC_KEYMGMT_IMPORT_TYPES, (void (*)(void))oqs_imexport_types},\
+        {OSSL_FUNC_KEYMGMT_EXPORT, (void (*)(void))oqsx_export},             \
+        {OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))oqs_imexport_types},\
+        {OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))qkd_##tokalg##_gen_init},\
+        {OSSL_FUNC_KEYMGMT_GEN, (void (*)(void))oqsx_gen},                   \
+        {OSSL_FUNC_KEYMGMT_GEN_CLEANUP, (void (*)(void))oqsx_gen_cleanup},   \
+        {OSSL_FUNC_KEYMGMT_GEN_SET_PARAMS,                                   \
+         (void (*)(void))oqsx_gen_set_params},                               \
+        {OSSL_FUNC_KEYMGMT_GEN_SETTABLE_PARAMS,                              \
+         (void (*)(void))oqsx_gen_settable_params},                          \
+        {OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))oqsx_load},                 \
+        {0, NULL}};
+
 ///// OQS_TEMPLATE_FRAGMENT_KEYMGMT_FUNCTIONS_START
 MAKE_SIG_KEYMGMT_FUNCTIONS(dilithium2)
 MAKE_SIG_KEYMGMT_FUNCTIONS(p256_dilithium2)
@@ -1454,98 +1595,91 @@ MAKE_SIG_KEYMGMT_FUNCTIONS(p521_mayo5)
 MAKE_SIG_KEYMGMT_FUNCTIONS(CROSSrsdp128balanced)
 
 MAKE_KEM_KEYMGMT_FUNCTIONS(frodo640aes, OQS_KEM_alg_frodokem_640_aes, 128)
+MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_frodo640aes, OQS_KEM_alg_frodokem_640_aes, 128)
+MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_frodo640aes, OQS_KEM_alg_frodokem_640_aes, 128, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(frodo640aes, OQS_KEM_alg_frodokem_640_aes, 128)
 
-MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_frodo640aes, OQS_KEM_alg_frodokem_640_aes,
-                               128)
-
-MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_frodo640aes, OQS_KEM_alg_frodokem_640_aes,
-                               128, 0)
 MAKE_KEM_KEYMGMT_FUNCTIONS(frodo640shake, OQS_KEM_alg_frodokem_640_shake, 128)
+MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_frodo640shake, OQS_KEM_alg_frodokem_640_shake, 128)
+MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_frodo640shake, OQS_KEM_alg_frodokem_640_shake, 128, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(frodo640shake, OQS_KEM_alg_frodokem_640_shake, 128)
 
-MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_frodo640shake,
-                               OQS_KEM_alg_frodokem_640_shake, 128)
-
-MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_frodo640shake,
-                               OQS_KEM_alg_frodokem_640_shake, 128, 0)
 MAKE_KEM_KEYMGMT_FUNCTIONS(frodo976aes, OQS_KEM_alg_frodokem_976_aes, 192)
+MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_frodo976aes, OQS_KEM_alg_frodokem_976_aes, 192)
+MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_frodo976aes, OQS_KEM_alg_frodokem_976_aes, 192, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(frodo976aes, OQS_KEM_alg_frodokem_976_aes, 192)
 
-MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_frodo976aes, OQS_KEM_alg_frodokem_976_aes,
-                               192)
-
-MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_frodo976aes, OQS_KEM_alg_frodokem_976_aes,
-                               192, 0)
 MAKE_KEM_KEYMGMT_FUNCTIONS(frodo976shake, OQS_KEM_alg_frodokem_976_shake, 192)
+MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_frodo976shake, OQS_KEM_alg_frodokem_976_shake, 192)
+MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_frodo976shake, OQS_KEM_alg_frodokem_976_shake, 192, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(frodo976shake, OQS_KEM_alg_frodokem_976_shake, 192)
 
-MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_frodo976shake,
-                               OQS_KEM_alg_frodokem_976_shake, 192)
-
-MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_frodo976shake,
-                               OQS_KEM_alg_frodokem_976_shake, 192, 0)
 MAKE_KEM_KEYMGMT_FUNCTIONS(frodo1344aes, OQS_KEM_alg_frodokem_1344_aes, 256)
+MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_frodo1344aes, OQS_KEM_alg_frodokem_1344_aes, 256)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(frodo1344aes, OQS_KEM_alg_frodokem_1344_aes, 256)
 
-MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_frodo1344aes, OQS_KEM_alg_frodokem_1344_aes,
-                               256)
 MAKE_KEM_KEYMGMT_FUNCTIONS(frodo1344shake, OQS_KEM_alg_frodokem_1344_shake, 256)
+MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_frodo1344shake, OQS_KEM_alg_frodokem_1344_shake, 256)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(frodo1344shake, OQS_KEM_alg_frodokem_1344_shake, 256)
 
-MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_frodo1344shake,
-                               OQS_KEM_alg_frodokem_1344_shake, 256)
 MAKE_KEM_KEYMGMT_FUNCTIONS(kyber512, OQS_KEM_alg_kyber_512, 128)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_kyber512, OQS_KEM_alg_kyber_512, 128)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_kyber512, OQS_KEM_alg_kyber_512, 128, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(kyber512, OQS_KEM_alg_kyber_512, 128)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(kyber768, OQS_KEM_alg_kyber_768, 192)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_kyber768, OQS_KEM_alg_kyber_768, 192)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_kyber768, OQS_KEM_alg_kyber_768, 192, 0)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_kyber768, OQS_KEM_alg_kyber_768, 128, 0)
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_kyber768, OQS_KEM_alg_kyber_768, 128)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(kyber768, OQS_KEM_alg_kyber_768, 192)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(kyber1024, OQS_KEM_alg_kyber_1024, 256)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_kyber1024, OQS_KEM_alg_kyber_1024, 256)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(kyber1024, OQS_KEM_alg_kyber_1024, 256)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(mlkem512, OQS_KEM_alg_ml_kem_512, 128)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_mlkem512, OQS_KEM_alg_ml_kem_512, 128)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_mlkem512, OQS_KEM_alg_ml_kem_512, 128, 1)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(mlkem512, OQS_KEM_alg_ml_kem_512, 128)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(mlkem768, OQS_KEM_alg_ml_kem_768, 192)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_mlkem768, OQS_KEM_alg_ml_kem_768, 192)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_mlkem768, OQS_KEM_alg_ml_kem_768, 192, 1)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(X25519MLKEM768, OQS_KEM_alg_ml_kem_768, 128, 1)
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(SecP256r1MLKEM768, OQS_KEM_alg_ml_kem_768, 128)
-MAKE_KEM_KEYMGMT_FUNCTIONS(mlkem1024, OQS_KEM_alg_ml_kem_1024, 256)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(mlkem768, OQS_KEM_alg_ml_kem_768, 192)
 
+MAKE_KEM_KEYMGMT_FUNCTIONS(mlkem1024, OQS_KEM_alg_ml_kem_1024, 256)
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_mlkem1024, OQS_KEM_alg_ml_kem_1024, 256)
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_mlkem1024, OQS_KEM_alg_ml_kem_1024, 192)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(mlkem1024, OQS_KEM_alg_ml_kem_1024, 256)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(bikel1, OQS_KEM_alg_bike_l1, 128)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_bikel1, OQS_KEM_alg_bike_l1, 128)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_bikel1, OQS_KEM_alg_bike_l1, 128, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(bikel1, OQS_KEM_alg_bike_l1, 128)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(bikel3, OQS_KEM_alg_bike_l3, 192)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_bikel3, OQS_KEM_alg_bike_l3, 192)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_bikel3, OQS_KEM_alg_bike_l3, 192, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(bikel3, OQS_KEM_alg_bike_l3, 192)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(bikel5, OQS_KEM_alg_bike_l5, 256)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_bikel5, OQS_KEM_alg_bike_l5, 256)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(bikel5, OQS_KEM_alg_bike_l5, 256)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(hqc128, OQS_KEM_alg_hqc_128, 128)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p256_hqc128, OQS_KEM_alg_hqc_128, 128)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x25519_hqc128, OQS_KEM_alg_hqc_128, 128, 0)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(hqc128, OQS_KEM_alg_hqc_128, 128)
+
 MAKE_KEM_KEYMGMT_FUNCTIONS(hqc192, OQS_KEM_alg_hqc_192, 192)
-
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p384_hqc192, OQS_KEM_alg_hqc_192, 192)
-
 MAKE_KEM_ECX_KEYMGMT_FUNCTIONS(x448_hqc192, OQS_KEM_alg_hqc_192, 192, 0)
-MAKE_KEM_KEYMGMT_FUNCTIONS(hqc256, OQS_KEM_alg_hqc_256, 256)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(hqc192, OQS_KEM_alg_hqc_192, 192)
 
+MAKE_KEM_KEYMGMT_FUNCTIONS(hqc256, OQS_KEM_alg_hqc_256, 256)
 MAKE_KEM_ECP_KEYMGMT_FUNCTIONS(p521_hqc256, OQS_KEM_alg_hqc_256, 256)
+MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(hqc256, OQS_KEM_alg_hqc_256, 256)
 ///// OQS_TEMPLATE_FRAGMENT_KEYMGMT_FUNCTIONS_END
