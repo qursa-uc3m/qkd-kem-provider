@@ -64,6 +64,17 @@ const char *kHybridKEMAlgorithms[] = {
     "x448_hqc192",          "p521_hqc256",        NULL,
 }; ///// OQS_TEMPLATE_FRAGMENT_HYBRID_KEM_ALGS_END
 
+/** \brief List of QKD hybrid KEMs. */
+const char *kQKDHybridKEMAlgorithms[] = {
+    "qkd_frodo640aes",      "qkd_frodo640shake",  "qkd_frodo976aes",
+    "qkd_frodo976shake",    "qkd_frodo1344aes",   "qkd_frodo1344shake",
+    "qkd_kyber512",         "qkd_kyber768",       "qkd_kyber1024",
+    "qkd_mlkem512",         "qkd_mlkem768",       "qkd_mlkem1024",
+    "qkd_bikel1",           "qkd_bikel3",         "qkd_bikel5",
+    "qkd_hqc128",           "qkd_hqc192",         "qkd_hqc256",
+    NULL,
+}; ///// OQS_TEMPLATE_FRAGMENT_QKD_HYBRID_KEM_ALGS_END
+
 /** \brief Indicates if a string is in a given list of strings.
  *
  * \param list List of strings.
@@ -94,6 +105,10 @@ static int is_string_in_list(const char **list, const char *s) {
  * \returns 1 if hybrid, else 0. */
 #define is_kem_algorithm_hybrid(_alg_)                                         \
     is_string_in_list(kHybridKEMAlgorithms, (_alg_))
+
+/** \returns 1 if QKD hybrid, else 0. */
+#define is_kem_algorithm_qkd_hybrid(_alg_)                                     \
+    is_string_in_list(kQKDHybridKEMAlgorithms, (_alg_))
 
 /** \brief A pair of keys. */
 struct KeyPair {
@@ -582,7 +597,8 @@ next_alg:
         goto unload_oqs_provider;
     }
     for (; algs->algorithm_names != NULL; ++algs) {
-        if (!is_kem_algorithm_hybrid(algs->algorithm_names)) {
+        if (!is_kem_algorithm_hybrid(algs->algorithm_names) &&
+            !is_kem_algorithm_qkd_hybrid(algs->algorithm_names)) {
             continue;
         }
         if (test_algorithm(libctx, algs->algorithm_names)) {

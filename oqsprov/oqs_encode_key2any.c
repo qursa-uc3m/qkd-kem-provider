@@ -904,6 +904,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x25519_frodo640aes_input_type "x25519_frodo640aes"
 #define x25519_frodo640aes_pem_type "x25519_frodo640aes"
 #define frodo640shake_evp_type 0
+#define qkd_frodo640shake_evp_type 0
+#define qkd_frodo640shake_input_type "qkd_frodo640shake"
+#define qkd_frodo640shake_pem_type "qkd_frodo640shake"
 #define frodo640shake_input_type "frodo640shake"
 #define frodo640shake_pem_type "frodo640shake"
 
@@ -913,6 +916,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x25519_frodo640shake_evp_type 0
 #define x25519_frodo640shake_input_type "x25519_frodo640shake"
 #define x25519_frodo640shake_pem_type "x25519_frodo640shake"
+#define qkd_frodo640aes_evp_type 0
+#define qkd_frodo640aes_input_type "qkd_frodo640aes"
+#define qkd_frodo640aes_pem_type "qkd_frodo640aes"
 #define frodo976aes_evp_type 0
 #define frodo976aes_input_type "frodo976aes"
 #define frodo976aes_pem_type "frodo976aes"
@@ -923,6 +929,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x448_frodo976aes_evp_type 0
 #define x448_frodo976aes_input_type "x448_frodo976aes"
 #define x448_frodo976aes_pem_type "x448_frodo976aes"
+#define qkd_frodo976aes_evp_type 0
+#define qkd_frodo976aes_input_type "qkd_frodo976aes"
+#define qkd_frodo976aes_pem_type "qkd_frodo976aes"
 #define frodo976shake_evp_type 0
 #define frodo976shake_input_type "frodo976shake"
 #define frodo976shake_pem_type "frodo976shake"
@@ -933,6 +942,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x448_frodo976shake_evp_type 0
 #define x448_frodo976shake_input_type "x448_frodo976shake"
 #define x448_frodo976shake_pem_type "x448_frodo976shake"
+#define qkd_frodo976shake_evp_type 0
+#define qkd_frodo976shake_input_type "qkd_frodo976shake"
+#define qkd_frodo976shake_pem_type "qkd_frodo976shake"
 #define frodo1344aes_evp_type 0
 #define frodo1344aes_input_type "frodo1344aes"
 #define frodo1344aes_pem_type "frodo1344aes"
@@ -940,6 +952,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define p521_frodo1344aes_evp_type 0
 #define p521_frodo1344aes_input_type "p521_frodo1344aes"
 #define p521_frodo1344aes_pem_type "p521_frodo1344aes"
+#define qkd_frodo1344aes_evp_type 0
+#define qkd_frodo1344aes_input_type "qkd_frodo1344aes"
+#define qkd_frodo1344aes_pem_type "qkd_frodo1344aes"
 #define frodo1344shake_evp_type 0
 #define frodo1344shake_input_type "frodo1344shake"
 #define frodo1344shake_pem_type "frodo1344shake"
@@ -947,6 +962,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define p521_frodo1344shake_evp_type 0
 #define p521_frodo1344shake_input_type "p521_frodo1344shake"
 #define p521_frodo1344shake_pem_type "p521_frodo1344shake"
+#define qkd_frodo1344shake_evp_type 0
+#define qkd_frodo1344shake_input_type "qkd_frodo1344shake"
+#define qkd_frodo1344shake_pem_type "qkd_frodo1344shake"
 #define kyber512_evp_type 0
 #define kyber512_input_type "kyber512"
 #define kyber512_pem_type "kyber512"
@@ -957,6 +975,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x25519_kyber512_evp_type 0
 #define x25519_kyber512_input_type "x25519_kyber512"
 #define x25519_kyber512_pem_type "x25519_kyber512"
+#define qkd_kyber512_evp_type 0
+#define qkd_kyber512_input_type "qkd_kyber512"
+#define qkd_kyber512_pem_type "qkd_kyber512"
 #define kyber768_evp_type 0
 #define kyber768_input_type "kyber768"
 #define kyber768_pem_type "kyber768"
@@ -973,6 +994,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define p256_kyber768_evp_type 0
 #define p256_kyber768_input_type "p256_kyber768"
 #define p256_kyber768_pem_type "p256_kyber768"
+#define qkd_kyber768_evp_type 0
+#define qkd_kyber768_input_type "qkd_kyber768"
+#define qkd_kyber768_pem_type "qkd_kyber768"
 #define kyber1024_evp_type 0
 #define kyber1024_input_type "kyber1024"
 #define kyber1024_pem_type "kyber1024"
@@ -980,6 +1004,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define p521_kyber1024_evp_type 0
 #define p521_kyber1024_input_type "p521_kyber1024"
 #define p521_kyber1024_pem_type "p521_kyber1024"
+#define qkd_kyber1024_evp_type 0
+#define qkd_kyber1024_input_type "qkd_kyber1024"
+#define qkd_kyber1024_pem_type "qkd_kyber1024"
 #define mlkem512_evp_type 0
 #define mlkem512_input_type "mlkem512"
 #define mlkem512_pem_type "mlkem512"
@@ -990,6 +1017,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x25519_mlkem512_evp_type 0
 #define x25519_mlkem512_input_type "x25519_mlkem512"
 #define x25519_mlkem512_pem_type "x25519_mlkem512"
+#define qkd_mlkem512_evp_type 0
+#define qkd_mlkem512_input_type "qkd_mlkem512"
+#define qkd_mlkem512_pem_type "qkd_mlkem512"
 #define mlkem768_evp_type 0
 #define mlkem768_input_type "mlkem768"
 #define mlkem768_pem_type "mlkem768"
@@ -1006,6 +1036,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define SecP256r1MLKEM768_evp_type 0
 #define SecP256r1MLKEM768_input_type "SecP256r1MLKEM768"
 #define SecP256r1MLKEM768_pem_type "SecP256r1MLKEM768"
+#define qkd_mlkem768_evp_type 0
+#define qkd_mlkem768_input_type "qkd_mlkem768"
+#define qkd_mlkem768_pem_type "qkd_mlkem768"
 #define mlkem1024_evp_type 0
 #define mlkem1024_input_type "mlkem1024"
 #define mlkem1024_pem_type "mlkem1024"
@@ -1016,6 +1049,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define p384_mlkem1024_evp_type 0
 #define p384_mlkem1024_input_type "p384_mlkem1024"
 #define p384_mlkem1024_pem_type "p384_mlkem1024"
+#define qkd_mlkem1024_evp_type 0
+#define qkd_mlkem1024_input_type "qkd_mlkem1024"
+#define qkd_mlkem1024_pem_type "qkd_mlkem1024"
 #define bikel1_evp_type 0
 #define bikel1_input_type "bikel1"
 #define bikel1_pem_type "bikel1"
@@ -1026,6 +1062,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x25519_bikel1_evp_type 0
 #define x25519_bikel1_input_type "x25519_bikel1"
 #define x25519_bikel1_pem_type "x25519_bikel1"
+#define qkd_bikel1_evp_type 0
+#define qkd_bikel1_input_type "qkd_bikel1"
+#define qkd_bikel1_pem_type "qkd_bikel1"
 #define bikel3_evp_type 0
 #define bikel3_input_type "bikel3"
 #define bikel3_pem_type "bikel3"
@@ -1036,6 +1075,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x448_bikel3_evp_type 0
 #define x448_bikel3_input_type "x448_bikel3"
 #define x448_bikel3_pem_type "x448_bikel3"
+#define qkd_bikel3_evp_type 0
+#define qkd_bikel3_input_type "qkd_bikel3"
+#define qkd_bikel3_pem_type "qkd_bikel3"
 #define bikel5_evp_type 0
 #define bikel5_input_type "bikel5"
 #define bikel5_pem_type "bikel5"
@@ -1043,6 +1085,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define p521_bikel5_evp_type 0
 #define p521_bikel5_input_type "p521_bikel5"
 #define p521_bikel5_pem_type "p521_bikel5"
+#define qkd_bikel5_evp_type 0
+#define qkd_bikel5_input_type "qkd_bikel5"
+#define qkd_bikel5_pem_type "qkd_bikel5"
 #define hqc128_evp_type 0
 #define hqc128_input_type "hqc128"
 #define hqc128_pem_type "hqc128"
@@ -1053,6 +1098,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x25519_hqc128_evp_type 0
 #define x25519_hqc128_input_type "x25519_hqc128"
 #define x25519_hqc128_pem_type "x25519_hqc128"
+#define qkd_hqc128_evp_type 0
+#define qkd_hqc128_input_type "qkd_hqc128"
+#define qkd_hqc128_pem_type "qkd_hqc128"
 #define hqc192_evp_type 0
 #define hqc192_input_type "hqc192"
 #define hqc192_pem_type "hqc192"
@@ -1063,6 +1111,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define x448_hqc192_evp_type 0
 #define x448_hqc192_input_type "x448_hqc192"
 #define x448_hqc192_pem_type "x448_hqc192"
+#define qkd_hqc192_evp_type 0
+#define qkd_hqc192_input_type "qkd_hqc192"
+#define qkd_hqc192_pem_type "qkd_hqc192"
 #define hqc256_evp_type 0
 #define hqc256_input_type "hqc256"
 #define hqc256_pem_type "hqc256"
@@ -1070,6 +1121,9 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 #define p521_hqc256_evp_type 0
 #define p521_hqc256_input_type "p521_hqc256"
 #define p521_hqc256_pem_type "p521_hqc256"
+#define qkd_hqc256_evp_type 0
+#define qkd_hqc256_input_type "qkd_hqc256"
+#define qkd_hqc256_pem_type "qkd_hqc256"
 
 #define dilithium2_evp_type 0
 #define dilithium2_input_type "dilithium2"

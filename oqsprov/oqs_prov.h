@@ -20,6 +20,8 @@
 #include <openssl/core_names.h>
 #include <openssl/e_os2.h>
 #include <openssl/opensslconf.h>
+#include <qkd-etsi-api/api.h>
+#include "oqs_qkd_etsi_api_wrapper.h"
 
 #define OQS_PROVIDER_VERSION_STR OQSPROVIDER_VERSION_TEXT
 
@@ -56,6 +58,16 @@
     "hybrid_classical_" OSSL_PKEY_PARAM_PRIV_KEY
 #define OQS_HYBRID_PKEY_PARAM_PQ_PUB_KEY "hybrid_pq_" OSSL_PKEY_PARAM_PUB_KEY
 #define OQS_HYBRID_PKEY_PARAM_PQ_PRIV_KEY "hybrid_pq_" OSSL_PKEY_PARAM_PRIV_KEY
+
+/* New definitions for QKD parameters */
+#define OQS_HYBRID_PKEY_PARAM_QKD_PUB_KEY \
+    "hybrid_qkd_" OSSL_PKEY_PARAM_PUB_KEY
+#define OQS_HYBRID_PKEY_PARAM_QKD_PRIV_KEY \
+    "hybrid_qkd_" OSSL_PKEY_PARAM_PRIV_KEY
+
+/* TODO_QKD: check if this is necessary. Optional: Add QKD-specific parameter for key_id if needed */
+#define OQS_HYBRID_PKEY_PARAM_QKD_KEY_ID \
+    "hybrid_qkd_key_id"
 
 /* Extras for OQS extension */
 
@@ -139,6 +151,7 @@ enum oqsx_key_type_en {
     KEY_TYPE_KEM,
     KEY_TYPE_ECP_HYB_KEM,
     KEY_TYPE_ECX_HYB_KEM,
+    KEY_TYPE_QKD_HYB_KEM,
     KEY_TYPE_HYB_SIG,
     KEY_TYPE_CMP_SIG
 };
@@ -159,6 +172,8 @@ struct oqsx_key_st {
 
     /* Indicates if the share of a hybrid scheme should be reversed */
     int reverse_share;
+
+    QKD_CTX *qkd_ctx;
 
     /* key lengths including size fields for classic key length information:
      * (numkeys-1)*SIZE_OF_UINT32
@@ -257,6 +272,7 @@ int oqs_patch_codepoints(void);
 
 extern const OSSL_DISPATCH oqs_generic_kem_functions[];
 extern const OSSL_DISPATCH oqs_hybrid_kem_functions[];
+extern const OSSL_DISPATCH oqs_qkd_kem_functions[];
 extern const OSSL_DISPATCH oqs_signature_functions[];
 
 ///// OQS_TEMPLATE_FRAGMENT_ENDECODER_FUNCTIONS_START
@@ -2303,6 +2319,25 @@ extern const OSSL_DISPATCH oqs_ecx_x448_hqc192_keymgmt_functions[];
 extern const OSSL_DISPATCH oqs_hqc256_keymgmt_functions[];
 
 extern const OSSL_DISPATCH oqs_ecp_p521_hqc256_keymgmt_functions[];
+
+extern const OSSL_DISPATCH oqs_qkd_frodo640aes_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_frodo640shake_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_frodo976aes_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_frodo976shake_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_frodo1344aes_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_frodo1344shake_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_kyber512_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_kyber768_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_kyber1024_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_mlkem512_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_mlkem768_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_mlkem1024_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_bikel1_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_bikel3_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_bikel5_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_hqc128_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_hqc192_keymgmt_functions[];
+extern const OSSL_DISPATCH oqs_qkd_hqc256_keymgmt_functions[];
 ///// OQS_TEMPLATE_FRAGMENT_ALG_FUNCTIONS_END
 
 /* BIO function declarations */

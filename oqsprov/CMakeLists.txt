@@ -12,10 +12,11 @@ set(PROVIDER_SOURCE_FILES
   oqsprov.c oqsprov_capabilities.c oqsprov_keys.c
   oqs_kmgmt.c oqs_sig.c oqs_kem.c
   oqs_encode_key2any.c oqs_endecoder_common.c oqs_decode_der2key.c oqsprov_bio.c
+  oqs_qkd_etsi_api_wrapper.c
   oqsprov.def
 )
 set(PROVIDER_HEADER_FILES
-  oqs_prov.h oqs_endecoder_local.h
+  oqs_prov.h oqs_qkd_kem.h oqs_qkd_etsi_api_wrapper.h oqs_endecoder_local.h
 )
 
 set(OQS_LIBRARY_TYPE MODULE)
@@ -72,6 +73,14 @@ if (OQS_LIBRARY_TYPE STREQUAL "MODULE")
 endif()
 
 target_link_libraries(oqsprovider PUBLIC OQS::oqs ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL_SOCKET_LIBS})
+
+target_link_libraries(oqsprovider
+    PUBLIC 
+    OQS::oqs 
+    ${OPENSSL_CRYPTO_LIBRARY} 
+    ${QKD_ETSI_API_LIB}
+    ${OQS_ADDL_SOCKET_LIBS}
+)
 
 install(TARGETS oqsprovider
         LIBRARY DESTINATION "${OPENSSL_MODULES_PATH}"
