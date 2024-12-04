@@ -24,11 +24,11 @@ if(OQS_PROVIDER_BUILD_STATIC)
   set(OQS_LIBRARY_TYPE STATIC)
 endif()
 
-add_library(oqsprovider ${OQS_LIBRARY_TYPE} ${PROVIDER_SOURCE_FILES})
+add_library(qkdkemprovider ${OQS_LIBRARY_TYPE} ${PROVIDER_SOURCE_FILES})
 
-set_target_properties(oqsprovider
+set_target_properties(qkdkemprovider
     PROPERTIES
-    OUTPUT_NAME "oqsprovider"
+    OUTPUT_NAME "qkdkemprovider"
     PUBLIC_HEADER "oqs_prov.h"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
@@ -46,7 +46,7 @@ set_target_properties(oqsprovider
 if (OQS_LIBRARY_TYPE STREQUAL "MODULE")
   # When openssl looks for provider modules it does not prepend "lib" to the
   # provider name.
-  set_target_properties(oqsprovider
+  set_target_properties(qkdkemprovider
     PROPERTIES
     PREFIX ""
   )
@@ -55,7 +55,7 @@ if (OQS_LIBRARY_TYPE STREQUAL "MODULE")
     # OpenSSL looks for `.dylib` files on XNU-based platforms.
     # Because `MODULE` writes to a `.so` file by default, we must explicitely
     # set the suffix here.
-    set_target_properties(oqsprovider
+    set_target_properties(qkdkemprovider
       PROPERTIES
       SUFFIX ".dylib"
     )
@@ -65,16 +65,16 @@ if (OQS_LIBRARY_TYPE STREQUAL "MODULE")
     # OpenSSL looks for `.dll` files on Windows platforms.
     # Because `MODULE` writes to a `.so` file by default, we must explicitely
     # set the suffix here.
-    set_target_properties(oqsprovider
+    set_target_properties(qkdkemprovider
       PROPERTIES
       SUFFIX ".dll"
     )
   endif()
 endif()
 
-target_link_libraries(oqsprovider PUBLIC OQS::oqs ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL_SOCKET_LIBS})
+target_link_libraries(qkdkemprovider PUBLIC OQS::oqs ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL_SOCKET_LIBS})
 
-target_link_libraries(oqsprovider
+target_link_libraries(qkdkemprovider
     PUBLIC 
     OQS::oqs 
     ${OPENSSL_CRYPTO_LIBRARY} 
@@ -82,7 +82,7 @@ target_link_libraries(oqsprovider
     ${OQS_ADDL_SOCKET_LIBS}
 )
 
-install(TARGETS oqsprovider
+install(TARGETS qkdkemprovider
         LIBRARY DESTINATION "${OPENSSL_MODULES_PATH}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/oqs-provider/"
@@ -94,7 +94,7 @@ elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
   set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE amd64)
 endif()
 
-install(TARGETS oqsprovider
+install(TARGETS qkdkemprovider
         CONFIGURATIONS DebPack
         DESTINATION .
         LIBRARY DESTINATION lib/ossl-modules
@@ -114,5 +114,5 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "www.openquantumsafe.org")
 include(CPack)
 
 if (OQS_PROVIDER_BUILD_STATIC)
-  targets_set_static_provider(oqsprovider)
+  targets_set_static_provider(qkdkemprovider)
 endif()

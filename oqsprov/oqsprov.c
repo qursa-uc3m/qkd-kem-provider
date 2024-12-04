@@ -1168,7 +1168,7 @@ static int oqsprovider_get_params(void *provctx, OSSL_PARAM params[]) {
     OSSL_PARAM *p;
 
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_NAME);
-    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, "OpenSSL OQS Provider"))
+    if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, "OpenSSL QKD-KEM Provider"))
         return 0;
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_VERSION);
     if (p != NULL && !OSSL_PARAM_set_utf8_ptr(p, OQS_PROVIDER_VERSION_STR))
