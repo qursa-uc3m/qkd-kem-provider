@@ -645,7 +645,7 @@ int oqs_patch_oids(void) {
 #define KEMKMQKDALG(NAMES, SECBITS)                                            \
     {"qkd_" #NAMES "",                                                         \
      "provider=oqsprovider,oqsprovider.security_bits=" #SECBITS "",            \
-     oqs_qkd_##NAMES##_keymgmt_functions}, 
+     oqs_qkd_##NAMES##_keymgmt_functions},
 
 /* Functions provided by the core */
 static OSSL_FUNC_core_gettable_params_fn *c_gettable_params = NULL;

@@ -13,12 +13,13 @@
 #ifdef NDEBUG
 #define QKD_DEBUG(fmt, ...)
 #else
-    #ifdef DEBUG_QKD
-    #define QKD_DEBUG(fmt, ...) \
-        fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__, ##__VA_ARGS__)
-    #else
-    #define QKD_DEBUG(fmt, ...)
-    #endif
+#ifdef DEBUG_QKD
+#define QKD_DEBUG(fmt, ...)                                                    \
+    fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__,         \
+            ##__VA_ARGS__)
+#else
+#define QKD_DEBUG(fmt, ...)
+#endif
 #endif
 
 static OSSL_LIB_CTX *libctx = NULL;
@@ -74,7 +75,8 @@ static int test_oqs_kems(const char *kemalg_name) {
             goto err;
         }
         QKD_DEBUG("Initialized encapsulation\n");
-        QKD_DEBUG("Before EVP_PKEY_encapsulate - outlen=%zu, seclen=%zu\n", outlen, seclen);
+        QKD_DEBUG("Before EVP_PKEY_encapsulate - outlen=%zu, seclen=%zu\n",
+                  outlen, seclen);
 
         // Get required buffer lengths
         if (!EVP_PKEY_encapsulate(ctx, NULL, &outlen, NULL, &seclen)) {
@@ -82,7 +84,8 @@ static int test_oqs_kems(const char *kemalg_name) {
             testresult = 0;
             goto err;
         }
-        QKD_DEBUG("Encapsulation lengths: ciphertext=%zu, shared secret=%zu\n", outlen, seclen);
+        QKD_DEBUG("Encapsulation lengths: ciphertext=%zu, shared secret=%zu\n",
+                  outlen, seclen);
 
         // Debug memory allocation
         QKD_DEBUG("Allocating buffers...\n");
@@ -95,7 +98,7 @@ static int test_oqs_kems(const char *kemalg_name) {
         // Debug actual encapsulation/decapsulation
         QKD_DEBUG("Performing encapsulation...\n");
         testresult &= EVP_PKEY_encapsulate(ctx, out, &outlen, secenc, &seclen);
-        
+
         QKD_DEBUG("Encapsulation succeeded\n");
 
         // Initialize decapsulation
@@ -137,8 +140,9 @@ static int test_oqs_kems(const char *kemalg_name) {
             testresult = 0;
         }
 
-        // Perform decapsulation 
-        int decaps_ret = EVP_PKEY_decapsulate(ctx, secdec, &seclen, out, outlen);
+        // Perform decapsulation
+        int decaps_ret =
+            EVP_PKEY_decapsulate(ctx, secdec, &seclen, out, outlen);
 
         // Update testresult with decapsulation steps
         testresult &= init_ret && (decaps_ret || 1);
@@ -147,8 +151,8 @@ static int test_oqs_kems(const char *kemalg_name) {
         if (strstr(kemalg_name, "qkd") != NULL) {
             /* Note: QKD portion is always last in the shared secret.
             QKD secret only depends on key ID, not full ciphertext*/
-            
-            // Test PQ portion 
+
+            // Test PQ portion
             QKD_DEBUG("Testing PQ portion...\n");
             if (memcmp(secenc, secdec, seclen - QKD_KEY_SIZE) != 0) {
                 QKD_DEBUG("PQ portion differs after tampering as expected\n");
@@ -161,9 +165,9 @@ static int test_oqs_kems(const char *kemalg_name) {
             // Test QKD portion
             QKD_DEBUG("\nTesting QKD portion...\n");
             if (memcmp(secenc + seclen - QKD_KEY_SIZE,
-                    secdec + seclen - QKD_KEY_SIZE,
-                    QKD_KEY_SIZE) == 0) {
-                QKD_DEBUG("QKD portion remains unchanged as expected - this is normal since QKD only uses key ID\n");
+                       secdec + seclen - QKD_KEY_SIZE, QKD_KEY_SIZE) == 0) {
+                QKD_DEBUG("QKD portion remains unchanged as expected - this is "
+                          "normal since QKD only uses key ID\n");
                 testresult &= 1;
             } else {
                 QKD_DEBUG("ERROR: QKD portion changed unexpectedly!\n");
@@ -173,7 +177,8 @@ static int test_oqs_kems(const char *kemalg_name) {
         } else {
             // Standard non-QKD tampering test
             if (memcmp(secenc, secdec, seclen) != 0) {
-                QKD_DEBUG("\nShared secrets do not match after tampering as expected\n");
+                QKD_DEBUG("\nShared secrets do not match after tampering as "
+                          "expected\n");
                 testresult &= 1;
             } else {
                 QKD_DEBUG("\nERROR: Shared secrets match after tampering!\n");

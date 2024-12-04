@@ -4,15 +4,17 @@
 
 /*
  * oqs_qkd_etsi_api_wrapper.h
- * Wrapper for QKD ETSI API to maintain compatibility with existing QKD_CTX interface
+ * Wrapper for QKD ETSI API to maintain compatibility with existing QKD_CTX
+ * interface
  */
 
 #ifndef QKD_ETSI_API_WRAPPER_H_
 #define QKD_ETSI_API_WRAPPER_H_
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <openssl/evp.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <qkd-etsi-api/api.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -537,7 +537,8 @@ MAKE_DECODER(_ecx, "x25519_frodo640aes", x25519_frodo640aes, oqsx,
 MAKE_DECODER(_ecx, "x25519_frodo640aes", x25519_frodo640aes, oqsx,
              SubjectPublicKeyInfo);
 MAKE_DECODER(_qkd, "qkd_frodo640aes", qkd_frodo640aes, oqsx, PrivateKeyInfo);
-MAKE_DECODER(_qkd, "qkd_frodo640aes", qkd_frodo640aes, oqsx, SubjectPublicKeyInfo);
+MAKE_DECODER(_qkd, "qkd_frodo640aes", qkd_frodo640aes, oqsx,
+             SubjectPublicKeyInfo);
 MAKE_DECODER(, "frodo640shake", frodo640shake, oqsx, PrivateKeyInfo);
 MAKE_DECODER(, "frodo640shake", frodo640shake, oqsx, SubjectPublicKeyInfo);
 
@@ -549,8 +550,10 @@ MAKE_DECODER(_ecx, "x25519_frodo640shake", x25519_frodo640shake, oqsx,
              PrivateKeyInfo);
 MAKE_DECODER(_ecx, "x25519_frodo640shake", x25519_frodo640shake, oqsx,
              SubjectPublicKeyInfo);
-MAKE_DECODER(_qkd, "qkd_frodo640shake", qkd_frodo640shake, oqsx, PrivateKeyInfo);
-MAKE_DECODER(_qkd, "qkd_frodo640shake", qkd_frodo640shake, oqsx, SubjectPublicKeyInfo);
+MAKE_DECODER(_qkd, "qkd_frodo640shake", qkd_frodo640shake, oqsx,
+             PrivateKeyInfo);
+MAKE_DECODER(_qkd, "qkd_frodo640shake", qkd_frodo640shake, oqsx,
+             SubjectPublicKeyInfo);
 MAKE_DECODER(, "frodo976aes", frodo976aes, oqsx, PrivateKeyInfo);
 MAKE_DECODER(, "frodo976aes", frodo976aes, oqsx, SubjectPublicKeyInfo);
 
@@ -561,7 +564,8 @@ MAKE_DECODER(_ecx, "x448_frodo976aes", x448_frodo976aes, oqsx, PrivateKeyInfo);
 MAKE_DECODER(_ecx, "x448_frodo976aes", x448_frodo976aes, oqsx,
              SubjectPublicKeyInfo);
 MAKE_DECODER(_qkd, "qkd_frodo976aes", qkd_frodo976aes, oqsx, PrivateKeyInfo);
-MAKE_DECODER(_qkd, "qkd_frodo976aes", qkd_frodo976aes, oqsx, SubjectPublicKeyInfo);
+MAKE_DECODER(_qkd, "qkd_frodo976aes", qkd_frodo976aes, oqsx,
+             SubjectPublicKeyInfo);
 MAKE_DECODER(, "frodo976shake", frodo976shake, oqsx, PrivateKeyInfo);
 MAKE_DECODER(, "frodo976shake", frodo976shake, oqsx, SubjectPublicKeyInfo);
 
@@ -573,7 +577,8 @@ MAKE_DECODER(_ecx, "x448_frodo976shake", x448_frodo976shake, oqsx,
              PrivateKeyInfo);
 MAKE_DECODER(_ecx, "x448_frodo976shake", x448_frodo976shake, oqsx,
              SubjectPublicKeyInfo);
-MAKE_DECODER(_qkd, "qkd_frodo976shake", qkd_frodo976shake, oqsx, PrivateKeyInfo);
+MAKE_DECODER(_qkd, "qkd_frodo976shake", qkd_frodo976shake, oqsx,
+             PrivateKeyInfo);
 MAKE_DECODER(_qkd, "qkd_frodo976shake", qkd_frodo976shake, oqsx,
              SubjectPublicKeyInfo);
 MAKE_DECODER(, "frodo1344aes", frodo1344aes, oqsx, PrivateKeyInfo);
@@ -593,7 +598,8 @@ MAKE_DECODER(_ecp, "p521_frodo1344shake", p521_frodo1344shake, oqsx,
              PrivateKeyInfo);
 MAKE_DECODER(_ecp, "p521_frodo1344shake", p521_frodo1344shake, oqsx,
              SubjectPublicKeyInfo);
-MAKE_DECODER(_qkd, "qkd_frodo1344shake", qkd_frodo1344shake, oqsx, PrivateKeyInfo);
+MAKE_DECODER(_qkd, "qkd_frodo1344shake", qkd_frodo1344shake, oqsx,
+             PrivateKeyInfo);
 MAKE_DECODER(_qkd, "qkd_frodo1344shake", qkd_frodo1344shake, oqsx,
              SubjectPublicKeyInfo);
 MAKE_DECODER(, "kyber512", kyber512, oqsx, PrivateKeyInfo);

@@ -19,12 +19,13 @@ static OSSL_FUNC_kem_freectx_fn oqs_qkd_kem_freectx;
 #ifdef NDEBUG
 #define QKD_DEBUG(fmt, ...)
 #else
-    #ifdef DEBUG_QKD
-    #define QKD_DEBUG(fmt, ...) \
-        fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__, ##__VA_ARGS__)
-    #else
-    #define QKD_DEBUG(fmt, ...)
-    #endif
+#ifdef DEBUG_QKD
+#define QKD_DEBUG(fmt, ...)                                                    \
+    fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__,         \
+            ##__VA_ARGS__)
+#else
+#define QKD_DEBUG(fmt, ...)
+#endif
 #endif
 
 static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
@@ -66,7 +67,7 @@ static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         goto err;
     }
 
-    QKD_DEBUG("QKD context initialized successfully as %s", 
+    QKD_DEBUG("QKD context initialized successfully as %s",
               is_initiator ? "initiator" : "responder");
 err:
     return ret;
@@ -74,7 +75,7 @@ err:
 
 static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
                               int *idx_pq, int *idx_qkd) {
-    //TODO_QKD: put in a shared file with oqs_kmgmt.c and oqsprov_keys.c
+    // TODO_QKD: put in a shared file with oqs_kmgmt.c and oqsprov_keys.c
     int reverse_share = (key->keytype == KEY_TYPE_ECP_HYB_KEM ||
                          key->keytype == KEY_TYPE_ECX_HYB_KEM) &&
                         key->reverse_share;
@@ -88,10 +89,10 @@ static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
         if (key->numkeys == 2) {
             // PQC + QKD hybrid
             if (idx_classic)
-                *idx_classic = -1;  // No classical component
+                *idx_classic = -1; // No classical component
             if (idx_pq)
-                *idx_pq = 0;        // PQ at index 0, QKD at index 1
-        //TODO_QKD: implement the triple hybrid case
+                *idx_pq = 0; // PQ at index 0, QKD at index 1
+            // TODO_QKD: implement the triple hybrid case
         } else if (key->numkeys == 3) {
             // Classical + PQC + QKD triple hybrid
             if (reverse_share) {
@@ -123,7 +124,7 @@ static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
                 *idx_pq = key->numkeys - 1;
         }
         if (idx_qkd)
-            *idx_qkd = -1;  // No QKD component
+            *idx_qkd = -1; // No QKD component
     }
 }
 
@@ -131,7 +132,7 @@ static void *oqs_qkd_kem_newctx(void *provctx) {
     PROV_OQSKEM_CTX *qkdkemctx = OPENSSL_zalloc(sizeof(PROV_OQSKEM_CTX));
 
     QKD_DEBUG("oqs_qkd_kem_newctx(): OQS KEM provider called: newctx\n");
-    
+
     if (qkdkemctx == NULL)
         return NULL;
 
@@ -154,10 +155,10 @@ static void oqs_qkd_kem_freectx(void *vpkemctx) {
     QKD_DEBUG("oqs_qkd_kem_freectx(): OQS KEM context freed");
 }
 
-static int oqs_qkd_get_key_material(QKD_CTX *ctx, 
-                                   const unsigned char *key_id_in,
-                                   unsigned char *key_id_out,
-                                   unsigned char *key_out) {
+static int oqs_qkd_get_key_material(QKD_CTX *ctx,
+                                    const unsigned char *key_id_in,
+                                    unsigned char *key_id_out,
+                                    unsigned char *key_out) {
     int ret = OQS_SUCCESS;
     unsigned char *key_bytes = NULL;
     size_t key_len = 0;
@@ -194,10 +195,11 @@ static int oqs_qkd_get_key_material(QKD_CTX *ctx,
     }
     printf("\n");
 #endif
-    return 1; //TODO_QKD: Check return handling
+    return 1; // TODO_QKD: Check return handling
 
 err:
-    QKD_DEBUG("QKD key material retrieval %s", ret == OQS_SUCCESS ? "succeeded" : "failed");
+    QKD_DEBUG("QKD key material retrieval %s",
+              ret == OQS_SUCCESS ? "succeeded" : "failed");
     if (key_bytes) {
         OPENSSL_clear_free(key_bytes, key_len);
     }
@@ -207,7 +209,7 @@ err:
 static int oqs_qkd_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
                                       size_t *ctlen, unsigned char *secret,
                                       size_t *secretlen, int keyslot) {
-    //TODO_QKD: review this function
+    // TODO_QKD: review this function
     int ret = OQS_SUCCESS;
     PROV_OQSKEM_CTX *qkdkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
     OQSX_KEY *oqsx_key = qkdkemctx->kem;
@@ -223,7 +225,8 @@ static int oqs_qkd_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
 
     // If buffers are NULL, return lengths
     if (ct == NULL || secret == NULL) {
-        OQS_KEM_PRINTF3("QKD KEM returning lengths %zu and %zu", *ctlen, *secretlen);
+        OQS_KEM_PRINTF3("QKD KEM returning lengths %zu and %zu", *ctlen,
+                        *secretlen);
         return 1;
     }
 
@@ -235,14 +238,14 @@ static int oqs_qkd_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
     ON_ERR_SET_GOTO(ret < 0, ret, -6, err);
     ret = 1; // TODO_QKD: Check return handling
 err:
-    //TODO_QKD: free resources if needed
+    // TODO_QKD: free resources if needed
     return ret;
 }
 
 static int oqs_qkd_kem_decaps_keyslot(void *vpkemctx, unsigned char *secret,
-                                     size_t *secretlen,
-                                     const unsigned char *ct, size_t ctlen,
-                                     int keyslot) {
+                                      size_t *secretlen,
+                                      const unsigned char *ct, size_t ctlen,
+                                      int keyslot) {
     int ret = OQS_SUCCESS;
     PROV_OQSKEM_CTX *qkdkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
     OQSX_KEY *oqsx_key = qkdkemctx->kem;
@@ -267,17 +270,17 @@ static int oqs_qkd_kem_decaps_keyslot(void *vpkemctx, unsigned char *secret,
     ON_ERR_SET_GOTO(ctlen != QKD_KSID_SIZE, ret, -4, err);
 
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
-        printf("Key ID first bytes: ");
-        for (size_t i = 0; i < 16 && i < QKD_KSID_SIZE; i++) {
-            printf("%02x", ct[i]);
-        }
-        printf("\n");
+    printf("Key ID first bytes: ");
+    for (size_t i = 0; i < 16 && i < QKD_KSID_SIZE; i++) {
+        printf("%02x", ct[i]);
+    }
+    printf("\n");
 #endif
     // Perform QKD decapsulation to retrieve shared secret using key_id
     ret = oqs_qkd_get_key_material(oqsx_key->qkd_ctx,
-                                  ct,        // Input key_id
-                                  NULL,      // No output key_id needed
-                                  secret);   // Output buffer for secret
+                                   ct,      // Input key_id
+                                   NULL,    // No output key_id needed
+                                   secret); // Output buffer for secret
     ON_ERR_SET_GOTO(ret < 0, ret, -5, err);
 
     QKD_DEBUG("QKD KEM decapsulation succeeded");
@@ -289,10 +292,10 @@ err:
 
 /// QKD-KEM hybrid functions
 int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
-                              unsigned char *secret, size_t *secretlen) {
+                       unsigned char *secret, size_t *secretlen) {
     int ret = OQS_SUCCESS;
     PROV_OQSKEM_CTX *qkdkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
-    OQSX_KEY *oqsx_key = qkdkemctx->kem; //TODO_QKD: this used to be a const
+    OQSX_KEY *oqsx_key = qkdkemctx->kem; // TODO_QKD: this used to be a const
     size_t secretLenQKD = QKD_KEY_SIZE;
     size_t ctLenQKD = QKD_KSID_SIZE;
     size_t secretLenPQ = 0, ctLenPQ = 0;
@@ -305,28 +308,29 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     oqsx_comp_set_idx(oqsx_key, NULL, &idx_pq, &idx_qkd);
 
     if (idx_pq && idx_qkd) {
-            QKD_DEBUG("Error: Indices for classic, PQ, and QKD must be distinct.\n");
-            goto err;
+        QKD_DEBUG(
+            "Error: Indices for classic, PQ, and QKD must be distinct.\n");
+        goto err;
     }
 
     ON_ERR_SET_GOTO(idx_pq == -1 || idx_qkd == -1, ret, OQS_ERROR, err);
 
-    ret = init_qkd_context(oqsx_key, true);  // Initialize as initiator
+    ret = init_qkd_context(oqsx_key, true); // Initialize as initiator
     ON_ERR_SET_GOTO(ret < 0, ret, OQS_ERROR, err);
 
     // Check for NULL public key components directly in qkdkemctx
     ON_ERR_SET_GOTO(oqsx_key->comp_pubkey == NULL, ret, OQS_ERROR, err);
 
     // Get QKD lengths
-    ret = oqs_qkd_kem_encaps_keyslot(vpkemctx, NULL, &ctLenQKD, NULL, &secretLenQKD,
-                                     idx_qkd);
+    ret = oqs_qkd_kem_encaps_keyslot(vpkemctx, NULL, &ctLenQKD, NULL,
+                                     &secretLenQKD, idx_qkd);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
-    
+
     // Get PQ sizes
-    ret = oqs_qs_kem_encaps_keyslot(vpkemctx, NULL, &ctLenPQ, NULL, &secretLenPQ,
-                                    idx_pq);
+    ret = oqs_qs_kem_encaps_keyslot(vpkemctx, NULL, &ctLenPQ, NULL,
+                                    &secretLenPQ, idx_pq);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
-    
+
     // Set total sizes
     *ctlen = ctLenQKD + ctLenPQ;
     *secretlen = secretLenQKD + secretLenPQ;
@@ -355,13 +359,13 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     }
 
     // Encapsulate QKD key
-    ret = oqs_qkd_kem_encaps_keyslot(vpkemctx, ctQKD, &ctLenQKD, secretQKD, &secretLenQKD,
-                                     idx_qkd);
+    ret = oqs_qkd_kem_encaps_keyslot(vpkemctx, ctQKD, &ctLenQKD, secretQKD,
+                                     &secretLenQKD, idx_qkd);
     // print ret value
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
     // Encapsulate PQ key
-    ret = oqs_qs_kem_encaps_keyslot(vpkemctx, ctPQ, &ctLenPQ, secretPQ, &secretLenPQ,
-                                    idx_pq);
+    ret = oqs_qs_kem_encaps_keyslot(vpkemctx, ctPQ, &ctLenPQ, secretPQ,
+                                    &secretLenPQ, idx_pq);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
 
     QKD_DEBUG("QKD KEM encaps completed successfully");
@@ -373,12 +377,11 @@ err:
 
 /* QKD: Have into account that if we don't have the classical part, we cannot
 detect tampering and the return will be 1 from the PQ part */
-int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret,
-                       size_t *secretlen, const unsigned char *ct,
-                       size_t ctlen) {
+int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
+                       const unsigned char *ct, size_t ctlen) {
     int ret = OQS_SUCCESS;
     PROV_OQSKEM_CTX *qkdkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
-    OQSX_KEY *oqsx_key = qkdkemctx->kem; //TODO_QKD: this used to be a const
+    OQSX_KEY *oqsx_key = qkdkemctx->kem; // TODO_QKD: this used to be a const
     const OQS_KEM *qs_ctx = qkdkemctx->kem->oqsx_provider_ctx.oqsx_qs_ctx.kem;
     size_t secretLenQKD = QKD_KEY_SIZE;
     size_t ctLenQKD = QKD_KSID_SIZE;
@@ -393,17 +396,17 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret,
     oqsx_comp_set_idx(oqsx_key, NULL, &idx_pq, &idx_qkd);
     ON_ERR_SET_GOTO(idx_pq == -1 || idx_qkd == -1, ret, OQS_ERROR, err);
 
-    ret = init_qkd_context(oqsx_key, false);  // Initialize as responder
+    ret = init_qkd_context(oqsx_key, false); // Initialize as responder
     ON_ERR_SET_GOTO(ret < 0, ret, OQS_ERROR, err);
 
     // Get QKD lengths
     ret = oqs_qkd_kem_decaps_keyslot(vpkemctx, NULL, &secretLenQKD, NULL, 0,
-                                    idx_qkd);
+                                     idx_qkd);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
-    
+
     // Get PQ lengths
     ret = oqs_qs_kem_decaps_keyslot(vpkemctx, NULL, &secretLenPQ, NULL, 0,
-                                   idx_pq);
+                                    idx_pq);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
 
     // Set total sizes
@@ -434,13 +437,13 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret,
     }
 
     // Perform QKD decapsulation
-    ret = oqs_qkd_kem_decaps_keyslot(vpkemctx, secretQKD, &secretLenQKD,
-                                    ctQKD, ctLenQKD, idx_qkd);
+    ret = oqs_qkd_kem_decaps_keyslot(vpkemctx, secretQKD, &secretLenQKD, ctQKD,
+                                     ctLenQKD, idx_qkd);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
 
     // Perform PQ decapsulation
-    ret = oqs_qs_kem_decaps_keyslot(vpkemctx, secretPQ, &secretLenPQ,
-                                   ctPQ, ctLenPQ, idx_pq);
+    ret = oqs_qs_kem_decaps_keyslot(vpkemctx, secretPQ, &secretLenPQ, ctPQ,
+                                    ctLenPQ, idx_pq);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
 
     QKD_DEBUG("QKD KEM decaps completed successfully");

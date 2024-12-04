@@ -10,7 +10,7 @@
 #define OQS_QKD_KEM_H
 
 #include "oqs_prov.h"
-#include <openssl/evp.h>
 #include <openssl/core_names.h>
+#include <openssl/evp.h>
 
 #endif /* OQS_QKD_KEM_H */

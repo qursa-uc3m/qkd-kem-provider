@@ -80,12 +80,24 @@ const char *kHybridKEMAlgorithms[] = {
 
 /** \brief List of QKD hybrid KEMs. */
 const char *kQKDHybridKEMAlgorithms[] = {
-    "qkd_frodo640aes",      "qkd_frodo640shake",  "qkd_frodo976aes",
-    "qkd_frodo976shake",    "qkd_frodo1344aes",   "qkd_frodo1344shake",
-    "qkd_kyber512",         "qkd_kyber768",       "qkd_kyber1024",
-    "qkd_mlkem512",         "qkd_mlkem768",       "qkd_mlkem1024",
-    "qkd_bikel1",           "qkd_bikel3",         "qkd_bikel5",
-    "qkd_hqc128",           "qkd_hqc192",         "qkd_hqc256",
+    "qkd_frodo640aes",
+    "qkd_frodo640shake",
+    "qkd_frodo976aes",
+    "qkd_frodo976shake",
+    "qkd_frodo1344aes",
+    "qkd_frodo1344shake",
+    "qkd_kyber512",
+    "qkd_kyber768",
+    "qkd_kyber1024",
+    "qkd_mlkem512",
+    "qkd_mlkem768",
+    "qkd_mlkem1024",
+    "qkd_bikel1",
+    "qkd_bikel3",
+    "qkd_bikel5",
+    "qkd_hqc128",
+    "qkd_hqc192",
+    "qkd_hqc256",
     NULL,
 }; ///// OQS_TEMPLATE_FRAGMENT_QKD_HYBRID_KEM_ALGS_END
 

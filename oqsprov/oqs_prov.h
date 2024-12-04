@@ -15,13 +15,13 @@
 #include <stdatomic.h>
 #endif
 
+#include "oqs_qkd_etsi_api_wrapper.h"
 #include <openssl/bio.h>
 #include <openssl/core.h>
 #include <openssl/core_names.h>
 #include <openssl/e_os2.h>
 #include <openssl/opensslconf.h>
 #include <qkd-etsi-api/api.h>
-#include "oqs_qkd_etsi_api_wrapper.h"
 
 #define OQS_PROVIDER_VERSION_STR OQSPROVIDER_VERSION_TEXT
 
@@ -60,14 +60,13 @@
 #define OQS_HYBRID_PKEY_PARAM_PQ_PRIV_KEY "hybrid_pq_" OSSL_PKEY_PARAM_PRIV_KEY
 
 /* New definitions for QKD parameters */
-#define OQS_HYBRID_PKEY_PARAM_QKD_PUB_KEY \
-    "hybrid_qkd_" OSSL_PKEY_PARAM_PUB_KEY
-#define OQS_HYBRID_PKEY_PARAM_QKD_PRIV_KEY \
+#define OQS_HYBRID_PKEY_PARAM_QKD_PUB_KEY "hybrid_qkd_" OSSL_PKEY_PARAM_PUB_KEY
+#define OQS_HYBRID_PKEY_PARAM_QKD_PRIV_KEY                                     \
     "hybrid_qkd_" OSSL_PKEY_PARAM_PRIV_KEY
 
-/* TODO_QKD: check if this is necessary. Optional: Add QKD-specific parameter for key_id if needed */
-#define OQS_HYBRID_PKEY_PARAM_QKD_KEY_ID \
-    "hybrid_qkd_key_id"
+/* TODO_QKD: check if this is necessary. Optional: Add QKD-specific parameter
+ * for key_id if needed */
+#define OQS_HYBRID_PKEY_PARAM_QKD_KEY_ID "hybrid_qkd_key_id"
 
 /* Extras for OQS extension */
 
