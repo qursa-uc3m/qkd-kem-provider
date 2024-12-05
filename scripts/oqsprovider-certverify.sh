@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use newly built oqsprovider to generate certs for alg $1
+# Use newly built qkdkemprovider to generate certs for alg $1
 
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <algorithmname>. Exiting."

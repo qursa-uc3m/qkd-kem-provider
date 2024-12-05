@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use newly built oqsprovider to save PKCS#12 files from keys and
+# Use newly built qkdkemprovider to save PKCS#12 files from keys and
 # and certificates files generated using alg $1.
 # Assumed oqsprovider-certgen.sh to have run before for same algorithm
 
@@ -47,22 +47,22 @@ echo "Generating PKCS#12 files..."
 $OPENSSL_APP pkcs12 -export -in tmp/$1_srv.crt -inkey tmp/$1_srv.key -passout pass: -out tmp/$1_srv_1.p12
 
 if [ $? -ne 0 ] || [ ! -f tmp/$1_srv_1.p12 ]; then
-    echo "PKCS#12 generation with oqsprovider enabled failed."
+    echo "PKCS#12 generation with qkdkemprovider enabled failed."
     exit 1
 fi
 
-# Generate config file with oqsprovider disabled
+# Generate config file with qkdkemprovider disabled
 sed -e 's/^oqsprovider/# oqsprovider/' "$OPENSSL_CONF" > tmp/openssl-ca-no-oqsprovider.cnf
 
 # This print an error but OpenSSL returns 0 and .p12 file is generated correctly
-OPENSSL_CONF=tmp/openssl-ca-no-oqsprovider.cnf $OPENSSL_APP pkcs12 -provider default -provider oqsprovider -export -in tmp/$1_srv.crt -inkey tmp/$1_srv.key -passout pass: -out tmp/$1_srv_2.p12
+OPENSSL_CONF=tmp/openssl-ca-no-oqsprovider.cnf $OPENSSL_APP pkcs12 -provider default -provider qkdkemprovider -export -in tmp/$1_srv.crt -inkey tmp/$1_srv.key -passout pass: -out tmp/$1_srv_2.p12
 
 if [ $? -ne 0 ] || [ ! -f tmp/$1_srv_2.p12 ]; then
-    echo "PKCS#12 generation with oqsprovider disabled failed."
+    echo "PKCS#12 generation with qkdkemprovider disabled failed."
     exit 1
 fi
 
 if [ $(cat tmp/$1_srv_1.p12 | $OPENSSL_APP sha256) -neq $(cat tmp/$1_srv_2.p12 | $OPENSSL_APP sha256) ]; then
-    echo "PKCS#12 files differ when oqsprovider is enabled or not."
+    echo "PKCS#12 files differ when qkdkemprovider is enabled or not."
     exit 1
 fi

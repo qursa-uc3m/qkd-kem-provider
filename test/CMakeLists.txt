@@ -12,7 +12,7 @@ endif()
 add_test(
   NAME oqs_signatures
   COMMAND oqs_test_signatures
-          "oqsprovider"
+          "qkdkemprovider"
           "${CMAKE_SOURCE_DIR}/test/oqs.cnf"
 )
 # openssl under MSVC seems to have a bug registering NIDs:
@@ -33,7 +33,7 @@ target_link_libraries(oqs_test_signatures PRIVATE ${OPENSSL_CRYPTO_LIBRARY} ${OQ
 add_test(
   NAME oqs_kems
   COMMAND oqs_test_kems
-          "oqsprovider"
+          "qkdkemprovider"
           "${CMAKE_SOURCE_DIR}/test/oqs.cnf"
 )
 # openssl under MSVC seems to have a bug registering NIDs:
@@ -54,7 +54,7 @@ target_link_libraries(oqs_test_kems PRIVATE ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL
 add_test(
     NAME oqs_groups
     COMMAND oqs_test_groups
-            "oqsprovider"
+            "qkdkemprovider"
             "${CMAKE_CURRENT_SOURCE_DIR}/oqs.cnf"
             "${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -75,7 +75,7 @@ target_link_libraries(oqs_test_groups PRIVATE ${OPENSSL_SSL_LIBRARY} ${OPENSSL_C
 add_test(
     NAME oqs_tlssig
     COMMAND oqs_test_tlssig
-            "oqsprovider"
+            "qkdkemprovider"
             "${CMAKE_CURRENT_SOURCE_DIR}/openssl-ca.cnf"
             "${CMAKE_CURRENT_BINARY_DIR}/tmp"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -99,7 +99,7 @@ target_link_libraries(oqs_test_endecode PRIVATE ${OPENSSL_CRYPTO_LIBRARY} ${OQS_
 add_test(
   NAME oqs_endecode
   COMMAND oqs_test_endecode
-          "oqsprovider"
+          "qkdkemprovider"
           "${CMAKE_CURRENT_SOURCE_DIR}/openssl-ca.cnf"
 )
 # openssl under MSVC seems to have a bug registering NIDs:
@@ -120,7 +120,7 @@ target_link_libraries(oqs_test_evp_pkey_params PRIVATE ${OPENSSL_CRYPTO_LIBRARY}
 add_test(
   NAME oqs_evp_pkey_params
   COMMAND oqs_test_evp_pkey_params
-          "oqsprovider"
+          "qkdkemprovider"
           "${CMAKE_CURRENT_SOURCE_DIR}/openssl-ca.cnf"
 )
 # openssl under MSVC seems to have a bug registering NIDs:

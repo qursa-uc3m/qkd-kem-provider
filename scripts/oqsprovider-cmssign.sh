@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use newly built oqsprovider to generate CMS signed files for alg $1
+# Use newly built qkdkemprovider to generate CMS signed files for alg $1
 # Also used to test X509 pubkey extract and sign/verify using openssl dgst
 # Assumed oqsprovider-certgen.sh to have run before for same algorithm
 

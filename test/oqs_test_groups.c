@@ -96,16 +96,20 @@ static int test_group(const OSSL_PARAM params[], void *data) {
 
     ret = test_oqs_groups(group_name);
 
+    // Check if group name starts with "qkd_"
+    const char *handshake_type = strncmp(group_name, "qkd_", 4) == 0 ? 
+                                "TLS-QKD-KEM" : "TLS-KEM";
+
     if (ret >= 0) {
         fprintf(stderr,
-                cGREEN "  TLS-KEM handshake test succeeded: %s" cNORM "\n",
-                group_name);
+                cGREEN "  %s handshake test succeeded: %s" cNORM "\n",
+                handshake_type, group_name);
     } else {
         fprintf(stderr,
                 cRED
-                "  TLS-KEM handshake test failed: %s, return code: %d" cNORM
+                "  %s handshake test failed: %s, return code: %d" cNORM
                 "\n",
-                group_name, ret);
+                handshake_type, group_name, ret);
         ERR_print_errors_fp(stderr);
         (*errcnt)++;
     }

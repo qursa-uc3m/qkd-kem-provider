@@ -1,6 +1,6 @@
 /**
  * \file
- * \brief Example of how to load oqsprovider when compiled as a static library
+ * \brief Example of how to load qkdkemprovider when compiled as a static library
  *        `using OSSL_PROVIDER_add_builtin`.
  */
 
@@ -10,16 +10,16 @@
 #include <openssl/err.h>
 #include <openssl/provider.h>
 
-/** \brief The initialization function of oqsprovider. */
+/** \brief The initialization function of qkdkemprovider. */
 extern OSSL_provider_init_fn oqs_provider_init;
 
 /** \brief Name of the oqsprovider. */
-static const char *kOQSProviderName = "oqsprovider";
+static const char *kOQSProviderName = "qkdkemprovider";
 
-/** \brief Tries to load the oqsprovider named "oqsprovider".
+/** \brief Tries to load the oqsprovider named "qkdkemprovider".
  *
  * \param libctx Context of the OpenSSL library in which to load the
- * oqsprovider.
+ * qkdkemprovider.
  *
  * \returns 0 if success, else -1. */
 static int load_oqs_provider(OSSL_LIB_CTX *libctx)

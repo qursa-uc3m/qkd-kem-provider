@@ -3,7 +3,7 @@
 set -e 
 set -x
 
-# Use newly built oqsprovider to generate certs for alg $1
+# Use newly built qkdkemprovider to generate certs for alg $1
 # Tests use of openssl req genpkey x509 verify pkey commands
 
 if [ $# -ne 1 ]; then
@@ -43,5 +43,5 @@ xxd -i tmp/$1_CA.der
 fi
 
 #fails:
-#$OPENSSL_APP verify -CAfile tmp/$1_CA.crt tmp/$1_srv.crt -provider oqsprovider -provider default
+#$OPENSSL_APP verify -CAfile tmp/$1_CA.crt tmp/$1_srv.crt -provider qkdkemprovider -provider default
 
