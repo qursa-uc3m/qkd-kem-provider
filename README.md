@@ -50,10 +50,24 @@ and then just
 ./scripts/fullbuild.sh -f
 ```
 
-## Running KEM tests
+## Running the tests
 
-To run the KEM tests, use the following command:
+You can run all the tests using the following command:
 
 ```bash
-./test_kems.sh
+./scripts/runtests.sh
+```
+
+We have also added a script to run individual tests:
+
+Run only KEM tests
+
+```bash
+./run_oqs_tests.sh --kem
+```
+
+Run only TLS Group tests
+
+```bash
+./run_oqs_tests.sh --groups
 ```

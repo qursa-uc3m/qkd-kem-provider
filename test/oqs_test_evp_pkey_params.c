@@ -622,9 +622,10 @@ next_alg:
         ++errcnt;
         goto unload_oqs_provider;
     }
+    // TODO_QKD: Add test for QKD hybrid KEMs
     for (; algs->algorithm_names != NULL; ++algs) {
-        if (!is_kem_algorithm_hybrid(algs->algorithm_names) &&
-            !is_kem_algorithm_qkd_hybrid(algs->algorithm_names)) {
+        if (!is_kem_algorithm_hybrid(algs->algorithm_names) ||
+            is_kem_algorithm_qkd_hybrid(algs->algorithm_names)) {
             continue;
         }
         if (test_algorithm(libctx, algs->algorithm_names)) {

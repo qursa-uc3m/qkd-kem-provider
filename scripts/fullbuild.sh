@@ -5,7 +5,7 @@
 # Argument -F: Hard clean, ensuring checkout and build of all dependencies
 # EnvVar CMAKE_PARAMS: passed to cmake
 # EnvVar MAKE_PARAMS: passed to invocations of make; sample value: "-j"
-# EnvVar OQSPROV_CMAKE_PARAMS: passed to invocations of oqsprovider cmake
+# EnvVar OQSPROV_CMAKE_PARAMS: passed to invocations of qkdkemprovider cmake
 # EnvVar LIBOQS_BRANCH: Defines branch/release of liboqs; default value "main"
 # EnvVar OQS_ALGS_ENABLED: If set, defines OQS algs to be enabled, e.g., "STD"
 # EnvVar OPENSSL_INSTALL: If set, defines (binary) OpenSSL installation to use
@@ -125,8 +125,8 @@ if [ -z $liboqs_DIR ]; then
 fi
 
 # Check whether provider is built:
-if [ ! -f "_build/lib/oqsprovider.$SHLIBEXT" ]; then
-   echo "oqsprovider (_build/lib/oqsprovider.$SHLIBEXT) not built: Building..."
+if [ ! -f "_build/lib/qkdkemprovider.$SHLIBEXT" ]; then
+   echo "qkdkemprovider (_build/lib/qkdkemprovider.$SHLIBEXT) not built: Building..."
    # for full debug build add: -DCMAKE_BUILD_TYPE=Debug
    #BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
    BUILD_TYPE=""

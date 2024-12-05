@@ -2,7 +2,7 @@
 
 set -e 
 
-# Use newly built oqsprovider to test interop with external sites
+# Use newly built qkdkemprovider to test interop with external sites
 
 if [ -z "$OPENSSL_APP" ]; then
     echo "OPENSSL_APP env var not set. Exiting."

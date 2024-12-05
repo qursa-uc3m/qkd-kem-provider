@@ -1,6 +1,6 @@
 # Build and test support scripts
 
-This directory contains various scripts aiming to ease build and test of `oqsprovider`.
+This directory contains various scripts aiming to ease build and test of `qkdkemprovider`.
 
 ## Building
 

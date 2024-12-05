@@ -6,13 +6,13 @@ rv=0
 
 provider2openssl() {
     echo
-    echo "Testing oqsprovider->oqs-openssl interop for $1:"
+    echo "Testing qkdkemprovider->oqs-openssl interop for $1:"
     "${OQS_PROVIDER_TESTSCRIPTS}/oqsprovider-certgen.sh" "$1" && "${OQS_PROVIDER_TESTSCRIPTS}/oqsprovider-cmssign.sh" "$1" sha3-384 && "${OQS_PROVIDER_TESTSCRIPTS}/oqs-openssl-certverify.sh" "$1" && "${OQS_PROVIDER_TESTSCRIPTS}/oqs-openssl-cmsverify.sh" "$1"
 }
 
 openssl2provider() {
     echo
-    echo "Testing oqs-openssl->oqsprovider interop for $1:"
+    echo "Testing oqs-openssl->qkdkemprovider interop for $1:"
     "${OQS_PROVIDER_TESTSCRIPTS}/oqs-openssl-certgen.sh" "$1" && "${OQS_PROVIDER_TESTSCRIPTS}/oqs-openssl-cmssign.sh" "$1" && "${OQS_PROVIDER_TESTSCRIPTS}/oqsprovider-certverify.sh" "$1" && "${OQS_PROVIDER_TESTSCRIPTS}/oqsprovider-cmsverify.sh" "$1"
 }
 
@@ -147,9 +147,9 @@ if ! "${OPENSSL_APP}" list -providers -verbose; then
    exit 1
 fi
 
-# Ensure "oqsprovider" is registered:
-if ! "${OPENSSL_APP}" list -providers -verbose | grep -q oqsprovider; then
-   echo "oqsprovider not registered. Exit test."
+# Ensure "qkdkemprovider" is registered:
+if ! "${OPENSSL_APP}" list -providers -verbose | grep -q qkdkemprovider; then
+   echo "qkdkemprovider not registered. Exit test."
    exit 1
 fi
 
@@ -160,7 +160,7 @@ rm -f interop.log
 echo "Cert gen/verify, CMS sign/verify, CA tests for all enabled OQS signature algorithms commencing: "
 
 # auto-detect all available signature algorithms:
-for alg in $("${OPENSSL_APP}" list -signature-algorithms | grep oqsprovider | sed -e "s/ @ .*//g" | sed -e "s/^  //g")
+for alg in $("${OPENSSL_APP}" list -signature-algorithms | grep qkdkemprovider | sed -e "s/ @ .*//g" | sed -e "s/^  //g")
 do
    if [ "$1" = "-V" ]; then
       echo "Testing $alg"
@@ -170,7 +170,7 @@ do
 done
 
 if [ -z "${certsgenerated}" ]; then
-   echo "No OQS signature algorithms found in provider 'oqsprovider'. No certs generated. Exiting."
+   echo "No OQS signature algorithms found in provider 'qkdkemprovider'. No certs generated. Exiting."
    exit 1
 else
    if [ "$1" = "-V" ]; then
@@ -201,7 +201,7 @@ echo
 if [ "${rv}" -ne 0 ]; then
    echo "Tests failed."
 else
-   echo "All oqsprovider tests passed."
+   echo "All qkdkemprovider tests passed."
 fi
 exit "${rv}"
 

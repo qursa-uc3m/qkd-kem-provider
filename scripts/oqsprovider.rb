@@ -18,13 +18,13 @@ class Oqsprovider < Formula
     end
 # Do not install as part of testing -- only when deployed; so comment out for now:
 #    system "cmake", "--install", "build"
-#    ohai "Update system openssl.cnf to activate oqsprovider by default;"
-#    ohai " otherwise use 'openssl <command> -provider oqsprovider' to activate."
+#    ohai "Update system openssl.cnf to activate qkdkemprovider by default;"
+#    ohai " otherwise use 'openssl <command> -provider qkdkemprovider' to activate."
   end
 
   test do
-    # This checks oqsprovider is available and executes within standard openssl installation
-    output = shell_output("openssl list -providers -provider-path #{lib} -provider oqsprovider")
+    # This checks qkdkemprovider is available and executes within standard openssl installation
+    output = shell_output("openssl list -providers -provider-path #{lib} -provider qkdkemprovider")
     assert_match("OpenSSL OQS Provider", output)
   end
 end

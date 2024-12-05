@@ -4,7 +4,7 @@ openssl_conf = openssl_init
 providers = provider_sect
 
 [provider_sect]
-oqsprovider = oqsprovider_sect
+qkdkemprovider = qkdkem_sect
 default = default_sect
 # fips = fips_sect
 
@@ -14,5 +14,6 @@ activate = 1
 #[fips_sect]
 #activate = 1
 
-[oqsprovider_sect]
+[qkdkem_sect]
+module = qkdkemprovider.so
 activate = 1
