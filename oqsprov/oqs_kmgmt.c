@@ -19,7 +19,12 @@
 
 #include "openssl/param_build.h"
 #include "oqs_prov.h"
-#include <qkd-etsi-api/api.h>
+#include <qkd-etsi-api/qkd_etsi_api.h>
+#ifdef ETSI_004_API
+#include <qkd-etsi-api/etsi004/api.h>
+#elif defined(ETSI_014_API)
+#include <qkd-etsi-api/etsi014/api.h>
+#endif
 
 // stolen from openssl/crypto/param_build_set.c as
 // ossl_param_build_set_octet_string not public API:

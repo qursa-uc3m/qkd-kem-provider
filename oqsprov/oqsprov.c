@@ -20,7 +20,12 @@
 
 #include "oqs_prov.h"
 #include "oqs_qkd_kem.h"
-#include <qkd-etsi-api/api.h>
+#include <qkd-etsi-api/qkd_etsi_api.h>
+#ifdef ETSI_004_API
+#include <qkd-etsi-api/etsi004/api.h>
+#elif defined(ETSI_014_API)
+#include <qkd-etsi-api/etsi014/api.h>
+#endif
 
 #ifdef NDEBUG
 #define OQS_PROV_PRINTF(a)

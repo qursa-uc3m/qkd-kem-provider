@@ -6,7 +6,12 @@
 
 #include "oqs/oqs.h"
 #include "test_common.h"
-#include <qkd-etsi-api/api.h>
+#include <qkd-etsi-api/qkd_etsi_api.h>
+#ifdef ETSI_004_API
+#include <qkd-etsi-api/etsi004/api.h>
+#elif defined(ETSI_014_API)
+#include <qkd-etsi-api/etsi014/api.h>
+#endif
 
 #define DEBUG_QKD
 

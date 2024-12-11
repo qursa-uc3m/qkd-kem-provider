@@ -7,7 +7,12 @@
  */
 
 #include "oqs_qkd_kem.h"
-#include <qkd-etsi-api/api.h>
+#include <qkd-etsi-api/qkd_etsi_api.h>
+#ifdef ETSI_004_API
+#include <qkd-etsi-api/etsi004/api.h>
+#elif defined(ETSI_014_API)
+#include <qkd-etsi-api/etsi014/api.h>
+#endif
 
 static OSSL_FUNC_kem_newctx_fn oqs_qkd_kem_newctx;
 static OSSL_FUNC_kem_encapsulate_fn oqs_qkd_kem_encaps;
@@ -42,8 +47,10 @@ static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
             QKD_DEBUG("QKD context already initialized with correct role");
             return OQS_SUCCESS;
         }
+#ifdef ETSI_004_API // TODO_QKD: check if we should do something for the ETSI_014_API case
         // Close existing context if role mismatch
         qkd_close(oqsx_key->qkd_ctx);
+#endif
         OPENSSL_free(oqsx_key->qkd_ctx);
         oqsx_key->qkd_ctx = NULL;
     }
@@ -59,6 +66,7 @@ static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         memset(oqsx_key->qkd_ctx->key_id, 0, QKD_KSID_SIZE);
     }
     // Open QKD connection
+#ifdef ETSI_004_API
     ret = qkd_open(oqsx_key->qkd_ctx);
     if (ret <= 0) {
         QKD_DEBUG("Failed to open QKD connection");
@@ -66,6 +74,10 @@ static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         oqsx_key->qkd_ctx = NULL;
         goto err;
     }
+#elif defined(ETSI_014_API)
+    // TODO_QKD: implement ETSI 014 API
+    ret = 1; // TODO_QKD: Check return handling
+#endif
 
     QKD_DEBUG("QKD context initialized successfully as %s",
               is_initiator ? "initiator" : "responder");
@@ -148,7 +160,9 @@ static void oqs_qkd_kem_freectx(void *vpkemctx) {
 
     if (qkdkemctx && qkdkemctx->kem && qkdkemctx->kem->qkd_ctx) {
         // Close QKD connection with direct pointer
+#ifdef ETSI_004_API // TODO_QKD: check if we should do something for the ETSI_014_API case
         qkd_close(qkdkemctx->kem->qkd_ctx);
+#endif
         oqsx_key_free(qkdkemctx->kem);
         OPENSSL_free(qkdkemctx);
     }
@@ -170,6 +184,7 @@ static int oqs_qkd_get_key_material(QKD_CTX *ctx,
     if (ctx->is_initiator) {
         ON_ERR_SET_GOTO(key_id_in != NULL, ret, OQS_ERROR, err);
         ON_ERR_SET_GOTO(key_id_out == NULL, ret, OQS_ERROR, err);
+        /* qkd_get_key() has same name for both ETSI 004 and ETSI 014, but different behaviour */
         if (!qkd_get_key(ctx)) {
             ret = OQS_ERROR;
             goto err;
@@ -180,10 +195,18 @@ static int oqs_qkd_get_key_material(QKD_CTX *ctx,
         ON_ERR_SET_GOTO(key_id_out != NULL, ret, OQS_ERROR, err);
 
         memcpy(ctx->key_id, key_id_in, QKD_KSID_SIZE);
+#ifdef ETSI_004_API
         if (!qkd_get_key(ctx)) {
             ret = OQS_ERROR;
             goto err;
         }
+#elif defined(ETSI_014_API)
+        // now call qkd_get_key_with_ids() instead of qkd_get_key()
+        if (!qkd_get_key_with_ids(ctx)) {
+            ret = OQS_ERROR;
+            goto err;
+        }
+#endif // ETSI_004_API
     }
 
     memcpy(key_out, ctx->key, QKD_KEY_SIZE);

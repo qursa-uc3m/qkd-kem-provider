@@ -11,10 +11,17 @@
 #ifndef QKD_ETSI_API_WRAPPER_H_
 #define QKD_ETSI_API_WRAPPER_H_
 
+#define ETSI_014_API // or ETSI_014_API
+
 #include <openssl/evp.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <qkd-etsi-api/api.h>
+#include <qkd-etsi-api/qkd_etsi_api.h>
+#ifdef ETSI_004_API
+#include <qkd-etsi-api/etsi004/api.h>
+#elif defined(ETSI_014_API)
+#include <qkd-etsi-api/etsi014/api.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,16 +33,25 @@ typedef struct {
     char *source_uri;
     char *dest_uri;
     EVP_PKEY *key;
-    struct qkd_qos_s qos;
     bool is_initiator;
     bool is_connected;
+#ifdef ETSI_004_API // TODO_QKD: check if we should do something for the ETSI_014_API case
+    struct qkd_qos_s qos;
     struct qkd_metadata_s metadata;
+#endif
 } QKD_CTX;
 
+#ifdef ETSI_004_API
 /* ETSI API Wrapper Functions - maintaining original function signatures */
 bool qkd_open(QKD_CTX *ctx);
 bool qkd_close(QKD_CTX *ctx);
 bool qkd_get_key(QKD_CTX *ctx);
+#endif /* ETSI_004_API */
+#ifdef ETSI_014_API
+bool qkd_get_status(QKD_CTX *ctx);
+bool qkd_get_key(QKD_CTX *ctx);
+bool qkd_get_key_with_ids(QKD_CTX *ctx);
+#endif /* ETSI_014_API */
 
 #ifdef __cplusplus
 }

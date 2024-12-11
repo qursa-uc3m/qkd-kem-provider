@@ -21,7 +21,12 @@
 #include <openssl/core_names.h>
 #include <openssl/e_os2.h>
 #include <openssl/opensslconf.h>
-#include <qkd-etsi-api/api.h>
+#include <qkd-etsi-api/qkd_etsi_api.h>
+#ifdef ETSI_004_API
+#include <qkd-etsi-api/etsi004/api.h>
+#elif defined(ETSI_014_API)
+#include <qkd-etsi-api/etsi014/api.h>
+#endif
 
 #define OQS_PROVIDER_VERSION_STR OQSPROVIDER_VERSION_TEXT
 
