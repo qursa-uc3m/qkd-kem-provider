@@ -38,6 +38,8 @@ typedef struct {
 #ifdef ETSI_004_API // TODO_QKD: check if we should do something for the ETSI_014_API case
     struct qkd_qos_s qos;
     struct qkd_metadata_s metadata;
+#elif defined(ETSI_014_API)
+    qkd_status_t status;
 #endif
 } QKD_CTX;
 

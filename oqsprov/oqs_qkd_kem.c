@@ -33,6 +33,60 @@ static OSSL_FUNC_kem_freectx_fn oqs_qkd_kem_freectx;
 #endif
 #endif
 
+static int qkd_init_uris(QKD_CTX *ctx) {
+    int ret = OQS_SUCCESS;
+    
+    if (!ctx) {
+        QKD_DEBUG("Invalid context");
+        return OQS_ERROR;
+    }
+
+    // Using hardcoded values for now
+    // TODO_QKD: put in openssl.cnf file
+    const char *env_source_uri = "qkd://localhost:1234";
+    const char *env_dest_uri = "qkd://localhost:5678";
+
+    // Initialize source URI if not set
+    if (!ctx->source_uri) {
+        if (!env_source_uri) {
+            QKD_DEBUG("Error: QKD_SOURCE_URI not defined");
+            return OQS_ERROR;
+        }
+        ctx->source_uri = OPENSSL_strdup(env_source_uri);
+        if (!ctx->source_uri) {
+            QKD_DEBUG("Error: Failed to allocate memory for source_uri");
+            return OQS_ERROR;
+        }
+    }
+
+    // Initialize destination URI if not set
+    if (!ctx->dest_uri) {
+        if (!env_dest_uri) {
+            QKD_DEBUG("Error: QKD_DEST_URI not defined");
+            // Clean up source_uri
+            if (ctx->source_uri) {
+                OPENSSL_free(ctx->source_uri);
+                ctx->source_uri = NULL;
+            }
+            return OQS_ERROR;
+        }
+        ctx->dest_uri = OPENSSL_strdup(env_dest_uri);
+        if (!ctx->dest_uri) {
+            QKD_DEBUG("Error: Failed to allocate memory for dest_uri");
+            // Clean up source_uri
+            if (ctx->source_uri) {
+                OPENSSL_free(ctx->source_uri);
+                ctx->source_uri = NULL;
+            }
+            return OQS_ERROR;
+        }
+    }
+
+    QKD_DEBUG("URIs initialized - source: %s, dest: %s", 
+              ctx->source_uri, ctx->dest_uri);
+    return OQS_SUCCESS;
+}
+
 static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     int ret = OQS_SUCCESS;
     QKD_DEBUG("Initializing QKD context");
@@ -62,9 +116,28 @@ static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     // Initialize context with clean state
     memset(oqsx_key->qkd_ctx, 0, sizeof(QKD_CTX));
     oqsx_key->qkd_ctx->is_initiator = is_initiator;
+
+#ifdef ETSI_014_API
+    // Initialize ETSI014 status fields to safe defaults
+    oqsx_key->qkd_ctx->status.source_KME_ID = NULL;
+    oqsx_key->qkd_ctx->status.target_KME_ID = NULL;
+    oqsx_key->qkd_ctx->status.master_SAE_ID = NULL;
+    oqsx_key->qkd_ctx->status.slave_SAE_ID = NULL;
+#endif
+
     if (is_initiator) {
         memset(oqsx_key->qkd_ctx->key_id, 0, QKD_KSID_SIZE);
     }
+
+    // Initialize URIs
+    ret = qkd_init_uris(oqsx_key->qkd_ctx);
+    if (ret != OQS_SUCCESS) {
+        QKD_DEBUG("Failed to initialize QKD URIs");
+        OPENSSL_free(oqsx_key->qkd_ctx);
+        oqsx_key->qkd_ctx = NULL;
+        goto err;
+    }
+
     // Open QKD connection
 #ifdef ETSI_004_API
     ret = qkd_open(oqsx_key->qkd_ctx);
@@ -75,8 +148,10 @@ static int init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         goto err;
     }
 #elif defined(ETSI_014_API)
+    // Here we load the URIs from the environment variables and check the status
+    ret = qkd_get_status(oqsx_key->qkd_ctx);
     // TODO_QKD: implement ETSI 014 API
-    ret = 1; // TODO_QKD: Check return handling
+    //ret = 1; // TODO_QKD: Check return handling
 #endif
 
     QKD_DEBUG("QKD context initialized successfully as %s",
