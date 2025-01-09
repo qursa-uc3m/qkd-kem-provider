@@ -68,37 +68,6 @@ bool qkd_open(QKD_CTX *ctx) {
     return false;
 }
 
-bool qkd_get_key(QKD_CTX *ctx) {
-
-    if (!ctx) {
-        // TODO_QKD: should we check if the context is connected?
-        QKD_DEBUG("Invalid context or not connected");
-        return false;
-    }
-
-    uint32_t status;
-    uint32_t index = 0;
-    unsigned char key_buffer[QKD_KEY_SIZE];
-
-    QKD_DEBUG("ETSI004: Getting key for stream ID %s", ctx->key_id);
-    uint32_t result =
-        GET_KEY(ctx->key_id, &index, key_buffer, &ctx->metadata, &status);
-
-    if (result == 0 && (status == QKD_STATUS_SUCCESS ||
-                        status == QKD_STATUS_PEER_DISCONNECTED)) {
-        ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL,
-                                                key_buffer, QKD_KEY_SIZE);
-        if (!ctx->key) {
-            QKD_DEBUG("ETSI004: EVP_PKEY conversion failed");
-            return false;
-        }
-        QKD_DEBUG("ETSI004: Key successfully generated");
-        return true;
-    }
-
-    QKD_DEBUG("ETSI004: Key generation failed: result=%u status=%u", result, status);
-    return false;
-}
 
 /* Close connection using ETSI API */
 bool qkd_close(QKD_CTX *ctx) {
@@ -188,62 +157,6 @@ bool qkd_get_status(QKD_CTX *ctx) {
    return true;
 }
 
-bool qkd_get_key(QKD_CTX *ctx) {
-    QKD_DEBUG("ETSI 014: qkd_get_key()");
-    if (!ctx) {
-        QKD_DEBUG("ETSI014: Invalid ctx");
-        return false;
-    }
-
-    if (!ctx->source_uri || !ctx->dest_uri) {
-        QKD_DEBUG("ETSI014: NULL URIs before GET_KEY call");
-        return false;
-    }
-
-    qkd_key_request_t req;
-    memset(&req, 0, sizeof(req));
-    req.number = 1;
-    req.size = QKD_KEY_SIZE;
-
-    qkd_key_container_t container;
-    memset(&container, 0, sizeof(container));
-    QKD_DEBUG("ETSI014: Requesting key from KME with source=%s, dest=%s", 
-              ctx->source_uri, ctx->dest_uri);
-    uint32_t ret = GET_KEY(ctx->source_uri, ctx->dest_uri, &req, &container);
-    QKD_DEBUG("ETSI014: GET_KEY returned %u", ret);
-    if (ret == QKD_STATUS_OK && container.key_count > 0) {
-        QKD_DEBUG("ETSI014: Got %d keys from KME", container.key_count);
-
-        // For simplicity, take the first key
-        qkd_key_t *first_key = &container.keys[0];
-        if (!first_key->key) {
-            QKD_DEBUG("ETSI014: No key data returned");
-            return false;
-        }
-
-        size_t outlen;
-        unsigned char *decoded_key = base64_decode(first_key->key, &outlen);
-        if (!decoded_key) {
-            QKD_DEBUG("ETSI014: Base64 decode failed");
-            return false;
-        }
-
-        ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, decoded_key, outlen);
-        free(decoded_key);
-
-        if (!ctx->key) {
-            QKD_DEBUG("ETSI014: EVP_PKEY_new_raw_private_key failed");
-            return false;
-        }
-
-        QKD_DEBUG("ETSI014: Key successfully retrieved and stored");
-        return true;
-    } else {
-        QKD_DEBUG("ETSI014: GET_KEY call failed: ret=%u or no keys returned", ret);
-        return false;
-    }
-}
-
 bool qkd_get_key_with_ids(QKD_CTX *ctx) {
     if (!ctx || !ctx->dest_uri) {
         QKD_DEBUG("ETSI 014: Invalid ctx");
@@ -310,3 +223,95 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
 }
 
 #endif /* ETSI_014_API */
+
+bool qkd_get_key(QKD_CTX *ctx) {
+    if (!ctx) {
+        QKD_DEBUG("Invalid QKD context");
+        return false;
+    }
+
+#ifdef ETSI_004_API
+    uint32_t status;
+    uint32_t index = 0;
+    unsigned char key_buffer[QKD_KEY_SIZE];
+
+    QKD_DEBUG("ETSI004: Getting key for stream ID");
+    uint32_t result = GET_KEY(ctx->key_id, &index, key_buffer, &ctx->metadata, &status);
+
+    if (result == 0 && (status == QKD_STATUS_SUCCESS || 
+                       status == QKD_STATUS_PEER_DISCONNECTED)) {
+        // Convert key to EVP format
+        ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL,
+                                               key_buffer, QKD_KEY_SIZE);
+        if (!ctx->key) {
+            QKD_DEBUG("ETSI004: EVP_PKEY conversion failed");
+            return false;
+        }
+        QKD_DEBUG("ETSI004: Key successfully generated");
+        return true;
+    }
+    QKD_DEBUG("ETSI004: Key generation failed: result=%u status=%u", result, status);
+    return false;
+
+#elif defined(ETSI_014_API)
+    if (!ctx->source_uri || !ctx->dest_uri) {
+        QKD_DEBUG("ETSI014: NULL URIs before GET_KEY call");
+        return false;
+    }
+
+    // Prepare request
+    qkd_key_request_t req;
+    memset(&req, 0, sizeof(req));
+    req.number = 1;
+    req.size = QKD_KEY_SIZE;
+
+    qkd_key_container_t container;
+    memset(&container, 0, sizeof(container));
+    
+    QKD_DEBUG("ETSI014: Requesting key from KME with source=%s, dest=%s",
+              ctx->source_uri, ctx->dest_uri);
+    
+    uint32_t ret = GET_KEY(ctx->source_uri, ctx->dest_uri, &req, &container);
+    QKD_DEBUG("ETSI014: GET_KEY returned %u", ret);
+
+    if (ret == QKD_STATUS_OK && container.key_count > 0) {
+        qkd_key_t *first_key = &container.keys[0];
+        if (!first_key->key) {
+            QKD_DEBUG("ETSI014: No key data returned");
+            return false;
+        }
+
+        // Store key ID if provided
+        if (first_key->key_ID) {
+            unsigned char tmp_id;
+            for(int i = 0; i < QKD_KSID_SIZE; i++) {
+                sscanf(first_key->key_ID + (i * 2), "%02hhx", &tmp_id);
+                ctx->key_id[i] = tmp_id;
+            }
+        }
+
+        // Decode and store key
+        size_t outlen;
+        unsigned char *decoded_key = base64_decode(first_key->key, &outlen);
+        if (!decoded_key) {
+            QKD_DEBUG("ETSI014: Base64 decode failed");
+            return false;
+        }
+
+        ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, 
+                                               decoded_key, outlen);
+        free(decoded_key);
+
+        if (!ctx->key) {
+            QKD_DEBUG("ETSI014: EVP_PKEY_new_raw_private_key failed");
+            return false;
+        }
+
+        QKD_DEBUG("ETSI014: Key successfully retrieved and stored");
+        return true;
+    }
+
+    QKD_DEBUG("ETSI014: GET_KEY call failed: ret=%u or no keys returned", ret);
+    return false;
+#endif
+}

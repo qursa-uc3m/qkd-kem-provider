@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "oqs_prov.h"
+#include "oqs_qkd_ctx.h"
 
 #define DEBUG_QKD
 
@@ -69,6 +70,7 @@ static int oqsx_key_recreate_classickey(OQSX_KEY *key, oqsx_key_op_t op);
 #endif
 
 // TODO_QKD: check if we need to add QKD keys here
+// TODO_QKD: add QKD hybrids
 static oqs_nid_name_t nid_names[NID_TABLE_LEN] = {
 #ifdef OQS_KEM_ENCODERS
 
@@ -77,45 +79,56 @@ static oqs_nid_name_t nid_names[NID_TABLE_LEN] = {
      128, 0},
     {0, "x25519_frodo640aes", OQS_KEM_alg_frodokem_640_aes,
      KEY_TYPE_ECX_HYB_KEM, 128, 0},
+     {0, "qkd_frodo640aes", OQS_KEM_alg_frodokem_640_aes, KEY_TYPE_QKD_HYB_KEM, 128, 0},
     {0, "frodo640shake", OQS_KEM_alg_frodokem_640_shake, KEY_TYPE_KEM, 128, 0},
     {0, "p256_frodo640shake", OQS_KEM_alg_frodokem_640_shake,
      KEY_TYPE_ECP_HYB_KEM, 128, 0},
     {0, "x25519_frodo640shake", OQS_KEM_alg_frodokem_640_shake,
      KEY_TYPE_ECX_HYB_KEM, 128, 0},
+    {0, "qkd_frodo640shake", OQS_KEM_alg_frodokem_640_shake, KEY_TYPE_QKD_HYB_KEM, 128, 0},
     {0, "frodo976aes", OQS_KEM_alg_frodokem_976_aes, KEY_TYPE_KEM, 192, 0},
     {0, "p384_frodo976aes", OQS_KEM_alg_frodokem_976_aes, KEY_TYPE_ECP_HYB_KEM,
      192, 0},
     {0, "x448_frodo976aes", OQS_KEM_alg_frodokem_976_aes, KEY_TYPE_ECX_HYB_KEM,
      192, 0},
+    {0, "qkd_frodo976aes", OQS_KEM_alg_frodokem_976_aes, KEY_TYPE_QKD_HYB_KEM, 192, 0},
     {0, "frodo976shake", OQS_KEM_alg_frodokem_976_shake, KEY_TYPE_KEM, 192, 0},
     {0, "p384_frodo976shake", OQS_KEM_alg_frodokem_976_shake,
      KEY_TYPE_ECP_HYB_KEM, 192, 0},
     {0, "x448_frodo976shake", OQS_KEM_alg_frodokem_976_shake,
      KEY_TYPE_ECX_HYB_KEM, 192, 0},
+    {0, "qkd_frodo976shake", OQS_KEM_alg_frodokem_976_shake, KEY_TYPE_QKD_HYB_KEM, 192, 0},
     {0, "frodo1344aes", OQS_KEM_alg_frodokem_1344_aes, KEY_TYPE_KEM, 256, 0},
     {0, "p521_frodo1344aes", OQS_KEM_alg_frodokem_1344_aes,
      KEY_TYPE_ECP_HYB_KEM, 256, 0},
+    {0, "qkd_frodo1344aes", OQS_KEM_alg_frodokem_1344_aes, KEY_TYPE_QKD_HYB_KEM, 256, 0},
     {0, "frodo1344shake", OQS_KEM_alg_frodokem_1344_shake, KEY_TYPE_KEM, 256,
      0},
     {0, "p521_frodo1344shake", OQS_KEM_alg_frodokem_1344_shake,
      KEY_TYPE_ECP_HYB_KEM, 256, 0},
+    {0, "qkd_frodo1344shake", OQS_KEM_alg_frodokem_1344_shake, KEY_TYPE_QKD_HYB_KEM, 256, 0}, 
     {0, "kyber512", OQS_KEM_alg_kyber_512, KEY_TYPE_KEM, 128, 0},
     {0, "p256_kyber512", OQS_KEM_alg_kyber_512, KEY_TYPE_ECP_HYB_KEM, 128, 0},
     {0, "x25519_kyber512", OQS_KEM_alg_kyber_512, KEY_TYPE_ECX_HYB_KEM, 128, 0},
+    {0, "qkd_kyber512", OQS_KEM_alg_kyber_512, KEY_TYPE_QKD_HYB_KEM, 128, 0},
     {0, "kyber768", OQS_KEM_alg_kyber_768, KEY_TYPE_KEM, 192, 0},
     {0, "p384_kyber768", OQS_KEM_alg_kyber_768, KEY_TYPE_ECP_HYB_KEM, 192, 0},
     {0, "x448_kyber768", OQS_KEM_alg_kyber_768, KEY_TYPE_ECX_HYB_KEM, 192, 0},
     {0, "x25519_kyber768", OQS_KEM_alg_kyber_768, KEY_TYPE_ECX_HYB_KEM, 192, 0},
     {0, "p256_kyber768", OQS_KEM_alg_kyber_768, KEY_TYPE_ECP_HYB_KEM, 192, 0},
+    {0, "qkd_kyber768", OQS_KEM_alg_kyber_768, KEY_TYPE_QKD_HYB_KEM, 192, 0},
     {0, "kyber1024", OQS_KEM_alg_kyber_1024, KEY_TYPE_KEM, 256, 0},
     {0, "p521_kyber1024", OQS_KEM_alg_kyber_1024, KEY_TYPE_ECP_HYB_KEM, 256, 0},
+    {0, "qkd_kyber1024", OQS_KEM_alg_kyber_1024, KEY_TYPE_QKD_HYB_KEM, 256, 0},
     {0, "mlkem512", OQS_KEM_alg_ml_kem_512, KEY_TYPE_KEM, 128, 0},
     {0, "p256_mlkem512", OQS_KEM_alg_ml_kem_512, KEY_TYPE_ECP_HYB_KEM, 128, 0},
     {0, "x25519_mlkem512", OQS_KEM_alg_ml_kem_512, KEY_TYPE_ECX_HYB_KEM, 128,
      1},
+    {0, "qkd_mlkem512", OQS_KEM_alg_ml_kem_512, KEY_TYPE_QKD_HYB_KEM, 128, 0},
     {0, "mlkem768", OQS_KEM_alg_ml_kem_768, KEY_TYPE_KEM, 192, 0},
     {0, "p384_mlkem768", OQS_KEM_alg_ml_kem_768, KEY_TYPE_ECP_HYB_KEM, 192, 0},
     {0, "x448_mlkem768", OQS_KEM_alg_ml_kem_768, KEY_TYPE_ECX_HYB_KEM, 192, 1},
+    {0, "qkd_mlkem768", OQS_KEM_alg_ml_kem_768, KEY_TYPE_QKD_HYB_KEM, 192, 0},
     {0, "X25519MLKEM768", OQS_KEM_alg_ml_kem_768, KEY_TYPE_ECX_HYB_KEM, 192, 1},
     {0, "SecP256r1MLKEM768", OQS_KEM_alg_ml_kem_768, KEY_TYPE_ECP_HYB_KEM, 192,
      0},
@@ -124,22 +137,29 @@ static oqs_nid_name_t nid_names[NID_TABLE_LEN] = {
      0},
     {0, "p384_mlkem1024", OQS_KEM_alg_ml_kem_1024, KEY_TYPE_ECP_HYB_KEM, 256,
      0},
+    {0, "qkd_mlkem1024", OQS_KEM_alg_ml_kem_1024, KEY_TYPE_QKD_HYB_KEM, 256, 0},
     {0, "bikel1", OQS_KEM_alg_bike_l1, KEY_TYPE_KEM, 128, 0},
     {0, "p256_bikel1", OQS_KEM_alg_bike_l1, KEY_TYPE_ECP_HYB_KEM, 128, 0},
     {0, "x25519_bikel1", OQS_KEM_alg_bike_l1, KEY_TYPE_ECX_HYB_KEM, 128, 0},
+    {0, "qkd_bikel1", OQS_KEM_alg_bike_l1, KEY_TYPE_QKD_HYB_KEM, 128, 0},
     {0, "bikel3", OQS_KEM_alg_bike_l3, KEY_TYPE_KEM, 192, 0},
     {0, "p384_bikel3", OQS_KEM_alg_bike_l3, KEY_TYPE_ECP_HYB_KEM, 192, 0},
     {0, "x448_bikel3", OQS_KEM_alg_bike_l3, KEY_TYPE_ECX_HYB_KEM, 192, 0},
+    {0, "qkd_bikel3", OQS_KEM_alg_bike_l3, KEY_TYPE_QKD_HYB_KEM, 192, 0},
     {0, "bikel5", OQS_KEM_alg_bike_l5, KEY_TYPE_KEM, 256, 0},
     {0, "p521_bikel5", OQS_KEM_alg_bike_l5, KEY_TYPE_ECP_HYB_KEM, 256, 0},
+    {0, "qkd_bikel5", OQS_KEM_alg_bike_l5, KEY_TYPE_QKD_HYB_KEM, 256, 0},
     {0, "hqc128", OQS_KEM_alg_hqc_128, KEY_TYPE_KEM, 128, 0},
     {0, "p256_hqc128", OQS_KEM_alg_hqc_128, KEY_TYPE_ECP_HYB_KEM, 128, 0},
     {0, "x25519_hqc128", OQS_KEM_alg_hqc_128, KEY_TYPE_ECX_HYB_KEM, 128, 0},
+    {0, "qkd_hqc128", OQS_KEM_alg_hqc_128, KEY_TYPE_QKD_HYB_KEM, 128, 0},
     {0, "hqc192", OQS_KEM_alg_hqc_192, KEY_TYPE_KEM, 192, 0},
     {0, "p384_hqc192", OQS_KEM_alg_hqc_192, KEY_TYPE_ECP_HYB_KEM, 192, 0},
     {0, "x448_hqc192", OQS_KEM_alg_hqc_192, KEY_TYPE_ECX_HYB_KEM, 192, 0},
+    {0, "qkd_hqc192", OQS_KEM_alg_hqc_192, KEY_TYPE_QKD_HYB_KEM, 192, 0},
     {0, "hqc256", OQS_KEM_alg_hqc_256, KEY_TYPE_KEM, 256, 0},
     {0, "p521_hqc256", OQS_KEM_alg_hqc_256, KEY_TYPE_ECP_HYB_KEM, 256, 0},
+    {0, "qkd_hqc256", OQS_KEM_alg_hqc_256, KEY_TYPE_QKD_HYB_KEM, 256, 0},
 
 #endif /* OQS_KEM_ENCODERS */
     {0, "dilithium2", OQS_SIG_alg_dilithium_2, KEY_TYPE_SIG, 128},
@@ -380,7 +400,6 @@ static int oqsx_comp_set_offsets(const OQSX_KEY *key, int set_privkey_offsets,
 
     // The only special case with reversed keys (so far)
     // is: x25519_mlkem*
-    // TODO_QKD: check if we need to add QKD keys here
     int reverse_share = (key->keytype == KEY_TYPE_ECP_HYB_KEM ||
                          key->keytype == KEY_TYPE_ECX_HYB_KEM) &&
                         key->reverse_share;
@@ -1156,7 +1175,6 @@ static OQSX_KEY *oqsx_key_op(const X509_ALGOR *palg, const unsigned char *p,
             }
         }
     }
-    // TODO_QKD: check if we need to add QKD keys here
     if (!oqsx_key_set_composites(key,
                                  key->keytype == KEY_TYPE_ECP_HYB_KEM ||
                                      key->keytype == KEY_TYPE_ECX_HYB_KEM ||
@@ -1271,7 +1289,6 @@ static int oqsx_key_recreate_classickey(OQSX_KEY *key, oqsx_key_op_t op) {
     } else {
         if (key->numkeys == 2) { // hybrid key
             int idx_classic;
-            // TODO_QKD: adapt to QKD
             oqsx_comp_set_idx(key, &idx_classic, NULL, NULL);
 
             uint32_t classical_pubkey_len = 0;
@@ -1651,6 +1668,8 @@ OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
         goto err;
     }
 
+    QKD_DEBUG("oqsx_key_new()");
+
 #ifdef OQS_PROVIDER_NOATOMIC
     ret->lock = CRYPTO_THREAD_lock_new();
     ON_ERR_GOTO(!ret->lock, err);
@@ -1753,8 +1772,11 @@ OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
             goto err;
         }
 
-        // TODO_QKD: Add QKD specific initialization here, similar to
-        // init_kex_fun
+        // TODO_QKD: ensure this is never called for the responder
+        if (oqs_init_qkd_context(ret, true) != OQS_SUCCESS) { // Assume initiator by default
+            fprintf(stderr, "Could not initialize QKD context\n"); 
+            goto err;
+        }
 
         QKD_DEBUG(
             "PQ key sizes: public=%ld, private=%ld, ciphertext=%ld, shared=%ld",
@@ -1936,8 +1958,8 @@ void oqsx_key_free(OQSX_KEY *key) {
     if (key->keytype == KEY_TYPE_KEM)
         OQS_KEM_free(key->oqsx_provider_ctx.oqsx_qs_ctx.kem);
     else if (key->keytype == KEY_TYPE_ECP_HYB_KEM ||
-             key->keytype == KEY_TYPE_ECX_HYB_KEM) {
-        // TODO_QKD: should we add QKD_HYB_KEM here?
+             key->keytype == KEY_TYPE_ECX_HYB_KEM ||
+             key->keytype == KEY_TYPE_QKD_HYB_KEM) {
         OQS_KEM_free(key->oqsx_provider_ctx.oqsx_qs_ctx.kem);
     } else
         OQS_SIG_free(key->oqsx_provider_ctx.oqsx_qs_ctx.sig);
@@ -1981,11 +2003,11 @@ int oqsx_key_allocate_keymaterial(OQSX_KEY *key, int include_private) {
     if (!key->privkey && include_private) {
         key->privkey = OPENSSL_secure_zalloc(key->privkeylen + aux);
         ON_ERR_SET_GOTO(!key->privkey, ret, 1, err_alloc);
-    }
+        }
     if (!key->pubkey && !include_private) {
         key->pubkey = OPENSSL_secure_zalloc(key->pubkeylen);
         ON_ERR_SET_GOTO(!key->pubkey, ret, 1, err_alloc);
-    }
+        }
 err_alloc:
     return ret;
 }
@@ -1995,7 +2017,7 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
     const OSSL_PARAM *pp1, *pp2;
 
     int classic_lengths_fixed = key->keytype == KEY_TYPE_ECP_HYB_KEM ||
-                                key->keytype == KEY_TYPE_ECX_HYB_KEM;
+                               key->keytype == KEY_TYPE_ECX_HYB_KEM;
 
     OQS_KEY_PRINTF("OQSX Key from data called\n");
     pp1 = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_PRIV_KEY);
@@ -2005,40 +2027,40 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
         ERR_raise(ERR_LIB_USER, OQSPROV_R_WRONG_PARAMETERS);
         return 0;
     }
-    if (pp1 != NULL) {
-        if (pp1->data_type != OSSL_PARAM_OCTET_STRING) {
-            ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_ENCODING);
-            return 0;
+        if (pp1 != NULL) {
+            if (pp1->data_type != OSSL_PARAM_OCTET_STRING) {
+                ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_ENCODING);
+                return 0;
+            }
+            if (key->privkeylen != pp1->data_size) {
+                ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
+                return 0;
+            }
+            OPENSSL_secure_clear_free(key->privkey, pp1->data_size);
+            key->privkey = OPENSSL_secure_malloc(pp1->data_size);
+            if (key->privkey == NULL) {
+                ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
+                return 0;
+            }
+            memcpy(key->privkey, pp1->data, pp1->data_size);
         }
-        if (key->privkeylen != pp1->data_size) {
-            ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
-            return 0;
+        if (pp2 != NULL) {
+            if (pp2->data_type != OSSL_PARAM_OCTET_STRING) {
+                OQS_KEY_PRINTF("invalid data type\n");
+                return 0;
+            }
+            if (key->pubkeylen != pp2->data_size) {
+                ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
+                return 0;
+            }
+            OPENSSL_secure_clear_free(key->pubkey, pp2->data_size);
+            key->pubkey = OPENSSL_secure_malloc(pp2->data_size);
+            if (key->pubkey == NULL) {
+                ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
+                return 0;
+            }
+            memcpy(key->pubkey, pp2->data, pp2->data_size);
         }
-        OPENSSL_secure_clear_free(key->privkey, pp1->data_size);
-        key->privkey = OPENSSL_secure_malloc(pp1->data_size);
-        if (key->privkey == NULL) {
-            ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
-            return 0;
-        }
-        memcpy(key->privkey, pp1->data, pp1->data_size);
-    }
-    if (pp2 != NULL) {
-        if (pp2->data_type != OSSL_PARAM_OCTET_STRING) {
-            OQS_KEY_PRINTF("invalid data type\n");
-            return 0;
-        }
-        if (key->pubkeylen != pp2->data_size) {
-            ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
-            return 0;
-        }
-        OPENSSL_secure_clear_free(key->pubkey, pp2->data_size);
-        key->pubkey = OPENSSL_secure_malloc(pp2->data_size);
-        if (key->pubkey == NULL) {
-            ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
-            return 0;
-        }
-        memcpy(key->pubkey, pp2->data, pp2->data_size);
-    }
     if (!oqsx_key_set_composites(key, classic_lengths_fixed) ||
         !oqsx_key_recreate_classickey(
             key, key->privkey != NULL ? KEY_OP_PRIVATE : KEY_OP_PUBLIC))
@@ -2049,7 +2071,6 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
 // OQS key always the last of the numkeys comp keys
 static int oqsx_key_gen_oqs(OQSX_KEY *key, int gen_kem) {
     int idx_pq;
-    // TODO_QKD: adapt to QKD
     oqsx_comp_set_idx(key, NULL, &idx_pq, NULL);
 
     if (gen_kem)
@@ -2061,6 +2082,100 @@ static int oqsx_key_gen_oqs(OQSX_KEY *key, int gen_kem) {
                                key->comp_pubkey[idx_pq],
                                key->comp_privkey[idx_pq]);
     }
+}
+
+static int oqsx_key_gen_qkd(OQSX_KEY *key) {
+    int ret = OQS_SUCCESS;
+    int idx_qkd;
+
+    QKD_DEBUG("Starting QKD key generation");
+
+    oqsx_comp_set_idx(key, NULL, NULL, &idx_qkd);
+    QKD_DEBUG("Got QKD index: %d", idx_qkd);
+    ON_ERR_SET_GOTO(idx_qkd < 0, ret, OQS_ERROR, err);
+
+    // Check key is valid
+    QKD_DEBUG("Checking key pointer: %p", key);
+    ON_ERR_SET_GOTO(!key, ret, OQS_ERROR, err);
+
+    // Access QKD context through key structure
+    QKD_CTX *qkd_ctx = key->qkd_ctx;
+    QKD_DEBUG("QKD context pointer: %p", qkd_ctx);
+    ON_ERR_SET_GOTO(!qkd_ctx, ret, OQS_ERROR, err);
+
+    // Only initiator should generate initial key
+    if (!qkd_ctx->is_initiator) {
+        QKD_DEBUG("QKD key generation only for initiator");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    QKD_DEBUG("Allocating QKD components");
+    // Allocate memory for QKD components
+    key->comp_pubkey[idx_qkd] = OPENSSL_malloc(QKD_KSID_SIZE);
+    key->comp_privkey[idx_qkd] = OPENSSL_secure_malloc(QKD_KEY_SIZE);
+
+    QKD_DEBUG("Pubkey pointer: %p, Privkey pointer: %p",
+              key->comp_pubkey[idx_qkd],
+              key->comp_privkey[idx_qkd]);
+
+    if (!key->comp_pubkey[idx_qkd] || !key->comp_privkey[idx_qkd]) {
+        QKD_DEBUG("Failed to allocate memory for QKD components");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+#ifdef ETSI_004_API
+    // For ETSI 004: At key generation time, only establish connection to get key ID
+    // The actual key retrieval happens later during decapsulation after Bob has
+    // established his session with this key ID
+    if (!qkd_open_connect(qkd_ctx)) {
+        QKD_DEBUG("Failed to establish QKD connection");
+        ret = OQS_ERROR;
+        goto err;
+    }
+    
+    // Store key ID as public key - this will be sent to Bob
+    memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
+    
+    // Initialize private key to zero - actual key will be retrieved during decapsulation
+    memset(key->comp_privkey[idx_qkd], 0, QKD_KEY_SIZE);
+
+#elif defined(ETSI_014_API)
+    // For ETSI 014: Get both key ID and key material immediately
+    // Bob will later use GET_KEY_WITH_IDS to get his copy
+    if (!qkd_get_key(qkd_ctx)) {
+        QKD_DEBUG("Failed to get QKD key material");
+        ret = OQS_ERROR;
+        goto err;
+    }
+    
+    // Store both public key ID and private key
+    memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
+    memcpy(key->comp_privkey[idx_qkd], qkd_ctx->key, QKD_KEY_SIZE);
+#endif
+
+#if !defined(NDEBUG) && defined(DEBUG_QKD)
+    printf("Generated Key ID first bytes: ");
+    for (size_t i = 0; i < 16 && i < QKD_KSID_SIZE; i++) {
+        printf("%02x", qkd_ctx->key_id[i]);
+    }
+    printf("\n");
+#endif
+
+    QKD_DEBUG("Successfully generated QKD key material");
+    return OQS_SUCCESS;
+
+err:
+    if (key->comp_privkey[idx_qkd]) {
+        OPENSSL_secure_clear_free(key->comp_privkey[idx_qkd], QKD_KEY_SIZE);
+        key->comp_privkey[idx_qkd] = NULL;
+    }
+    if (key->comp_pubkey[idx_qkd]) {
+        OPENSSL_free(key->comp_pubkey[idx_qkd]);
+        key->comp_pubkey[idx_qkd] = NULL;
+    }
+    return ret;
 }
 
 /* Generate classic keys, store length in leading SIZE_OF_UINT32 bytes of
@@ -2168,6 +2283,8 @@ static EVP_PKEY *oqsx_key_gen_evp_key_kem(OQSX_KEY *key, unsigned char *pubkey,
                                           unsigned char *privkey, int encode) {
     int ret = 0, ret2 = 0, aux = 0;
 
+    QKD_DEBUG("oqsx_key_gen_evp_key_kem()");
+
     // Free at errhyb:
     EVP_PKEY_CTX *kgctx = NULL;
     EVP_PKEY *pkey = NULL;
@@ -2256,6 +2373,8 @@ int oqsx_key_gen(OQSX_KEY *key) {
     int ret = 0;
     EVP_PKEY *pkey = NULL;
 
+    QKD_DEBUG("oqsx_key_gen()");
+
     if (key->privkey == NULL || key->pubkey == NULL) {
         ret = oqsx_key_allocate_keymaterial(key, 0) ||
               oqsx_key_allocate_keymaterial(key, 1);
@@ -2295,7 +2414,6 @@ int oqsx_key_gen(OQSX_KEY *key) {
         key->classical_pkey = pkey;
         ret = oqsx_key_gen_oqs(key, key->keytype != KEY_TYPE_HYB_SIG);
     } else if (key->keytype == KEY_TYPE_QKD_HYB_KEM) {
-        // TODO_QKD: should we call the QKD generation here??
         int idx_classic = -1, idx_pq = -1, idx_qkd = -1;
         if (key->numkeys != 2) {
             QKD_DEBUG("oqsx_key_gen(): QKD_HYB_KEM with numkeys != 2 not "
@@ -2307,8 +2425,18 @@ int oqsx_key_gen(OQSX_KEY *key) {
         ret = !oqsx_key_set_composites(key, 1);
         ON_ERR_GOTO(ret != 0, err_gen);
 
-        ret = oqsx_key_gen_oqs(key, 1);
-        // QKD component doesn't need generation - it comes from QKD device
+        // First generate PQ keypair - this generates both public and private keys
+        ret = oqsx_key_gen_oqs(key, 1); 
+        ON_ERR_GOTO(ret != OQS_SUCCESS, err_gen);
+
+        // Then initialize QKD component:
+        // - For ETSI 004: Get only key ID via OPEN_CONNECT (actual key retrieved during decaps)
+        // - For ETSI 014: Get both key ID and key via GET_KEY
+        ret = oqsx_key_gen_qkd(key);
+        ON_ERR_GOTO(ret != OQS_SUCCESS, err_gen);
+
+        OQS_KEY_PRINTF3("OQSKM: OQSX_KEY privkeylen %ld & pubkeylen: %ld\n",
+                    key->privkeylen, key->pubkeylen);
     } else if (key->keytype == KEY_TYPE_CMP_SIG) {
         int i;
         ret = oqsx_key_set_composites(key, 0);

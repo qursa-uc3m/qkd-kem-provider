@@ -35,6 +35,20 @@
     printf(a, b, c)
 #endif // NDEBUG
 
+#define DEBUG_QKD
+
+#ifdef NDEBUG
+#define QKD_DEBUG(fmt, ...)
+#else
+#ifdef DEBUG_QKD
+#define QKD_DEBUG(fmt, ...)                                                    \
+    fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__,         \
+            ##__VA_ARGS__)
+#else
+#define QKD_DEBUG(fmt, ...)
+#endif
+#endif
+
 static OSSL_FUNC_kem_newctx_fn oqs_kem_newctx;
 static OSSL_FUNC_kem_encapsulate_init_fn oqs_kem_encaps_init;
 static OSSL_FUNC_kem_encapsulate_fn oqs_qs_kem_encaps;
@@ -105,41 +119,43 @@ static int oqs_qs_kem_encaps_keyslot(void *vpkemctx, unsigned char *out,
     const PROV_OQSKEM_CTX *pkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
     const OQS_KEM *kem_ctx = NULL;
 
+    QKD_DEBUG("ENCAPS PQ keyslot: %d\n", keyslot);
+
     OQS_KEM_PRINTF("OQS KEM provider called: encaps\n");
     if (pkemctx->kem == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: OQS_KEM not initialized\n");
+        QKD_DEBUG("OQS Warning: OQS_KEM not initialized\n");
         return -1;
     }
 
     kem_ctx = pkemctx->kem->oqsx_provider_ctx.oqsx_qs_ctx.kem;
     if (pkemctx->kem->comp_pubkey == NULL ||
         pkemctx->kem->comp_pubkey[keyslot] == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: public key is NULL\n");
+        QKD_DEBUG("OQS Warning: public key is NULL\n");
         return -1;
     }
     if (outlen == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: outlen is NULL\n");
+        QKD_DEBUG("OQS Warning: outlen is NULL\n");
         return -1;
     }
     if (secretlen == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: secretlen is NULL\n");
+        QKD_DEBUG("OQS Warning: secretlen is NULL\n");
         return -1;
     }
     if (out == NULL || secret == NULL) {
         *outlen = kem_ctx->length_ciphertext;
         *secretlen = kem_ctx->length_shared_secret;
-        OQS_KEM_PRINTF3("KEM returning lengths %ld and %ld\n",
+        QKD_DEBUG("KEM returning lengths %ld and %ld\n",
                         kem_ctx->length_ciphertext,
                         kem_ctx->length_shared_secret);
         return 1;
     }
 
     if (*outlen < kem_ctx->length_ciphertext) {
-        OQS_KEM_PRINTF("OQS Warning: out buffer too small\n");
+        QKD_DEBUG("OQS Warning: out buffer too small\n");
         return -1;
     }
     if (*secretlen < kem_ctx->length_shared_secret) {
-        OQS_KEM_PRINTF("OQS Warning: secret buffer too small\n");
+        QKD_DEBUG("OQS Warning: secret buffer too small\n");
         return -1;
     }
     *outlen = kem_ctx->length_ciphertext;
@@ -155,50 +171,52 @@ static int oqs_qs_kem_decaps_keyslot(void *vpkemctx, unsigned char *out,
     const PROV_OQSKEM_CTX *pkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
     const OQS_KEM *kem_ctx = NULL;
 
-    OQS_KEM_PRINTF("OQS KEM provider called: decaps\n");
+    QKD_DEBUG("DECAPS PQ keyslot: %d\n", keyslot);
+
+    QKD_DEBUG("OQS KEM provider called: decaps\n");
     if (pkemctx->kem == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: OQS_KEM not initialized\n");
+        QKD_DEBUG("OQS Warning: OQS_KEM not initialized\n");
         return -1;
     }
     kem_ctx = pkemctx->kem->oqsx_provider_ctx.oqsx_qs_ctx.kem;
     if (pkemctx->kem->comp_privkey == NULL ||
         pkemctx->kem->comp_privkey[keyslot] == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: private key is NULL\n");
+        QKD_DEBUG("OQS Warning: private key is NULL\n");
         return -1;
     }
     if (out == NULL) {
         if (outlen != NULL) {
             *outlen = kem_ctx->length_shared_secret;
         }
-        OQS_KEM_PRINTF2("KEM returning length %ld\n",
+        QKD_DEBUG("KEM returning length %ld\n",
                         kem_ctx->length_shared_secret);
         return 1;
     }
     if (inlen != kem_ctx->length_ciphertext) {
-        OQS_KEM_PRINTF("OQS Warning: wrong input length\n");
+        QKD_DEBUG("OQS Warning: wrong input length\n");
         return 0;
     }
     if (in == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: in is NULL\n");
+        QKD_DEBUG("OQS Warning: in is NULL\n");
         return -1;
     }
     if (outlen == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: outlen is NULL\n");
+        QKD_DEBUG("OQS Warning: outlen is NULL\n");
         return -1;
     }
     if (*outlen < kem_ctx->length_shared_secret) {
-        OQS_KEM_PRINTF("OQS Warning: out buffer too small\n");
+        QKD_DEBUG("OQS Warning: out buffer too small\n");
         return -1;
     }
     *outlen = kem_ctx->length_shared_secret;
 
     if (pkemctx->kem->comp_privkey[keyslot] == NULL) {
-        OQS_KEM_PRINTF2("OQS Warning: comp_privkey[%d] is NULL\n", keyslot);
+        QKD_DEBUG("OQS Warning: comp_privkey[%d] is NULL\n", keyslot);
         return -1;
     }
 
     if (kem_ctx == NULL) {
-        OQS_KEM_PRINTF("OQS Warning: kem_ctx is NULL\n");
+        QKD_DEBUG("OQS Warning: kem_ctx is NULL\n");
         return -1;
     }
 
@@ -240,7 +258,6 @@ static int oqs_qs_kem_decaps(void *vpkemctx, unsigned char *out, size_t *outlen,
         {OSSL_FUNC_KEM_FREECTX, (void (*)(void))oqs_kem_freectx},              \
         {0, NULL}};
 
-// TODO_QKD: create oqs_qkd_kem_freectx??
 #define MAKE_QKD_KEM_FUNCTIONS(alg)                                            \
     const OSSL_DISPATCH oqs_##alg##_kem_functions[] = {                        \
         {OSSL_FUNC_KEM_NEWCTX, (void (*)(void))oqs_qkd_kem_newctx},            \

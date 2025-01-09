@@ -584,7 +584,7 @@ static int oqsx_get_params(void *key, OSSL_PARAM params[]) {
         NULL) {
         // hybrid KEMs are special in that the classic length information
         // shall not be passed out:
-        // TODO_QKD: check if we should add specific handling for QKD
+        // TODO_QKD: double check this
         if (oqsxk->keytype == KEY_TYPE_ECP_HYB_KEM ||
             oqsxk->keytype == KEY_TYPE_ECX_HYB_KEM) {
             if (!OSSL_PARAM_set_octet_string(
@@ -653,6 +653,7 @@ static int oqsx_set_params(void *key, const OSSL_PARAM params[]) {
     if (p != NULL) {
         size_t used_len;
         int classic_pubkey_len;
+        // TODO_QKD: check if further adaptation is needed
         if (oqsxkey->keytype == KEY_TYPE_ECP_HYB_KEM ||
             oqsxkey->keytype == KEY_TYPE_ECX_HYB_KEM) {
             // classic key len already stored by key setup; only data

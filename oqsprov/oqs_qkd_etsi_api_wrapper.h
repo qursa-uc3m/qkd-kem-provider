@@ -35,7 +35,7 @@ typedef struct {
     EVP_PKEY *key;
     bool is_initiator;
     bool is_connected;
-#ifdef ETSI_004_API // TODO_QKD: check if we should do something for the ETSI_014_API case
+#ifdef ETSI_004_API
     struct qkd_qos_s qos;
     struct qkd_metadata_s metadata;
 #elif defined(ETSI_014_API)
