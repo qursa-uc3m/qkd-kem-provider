@@ -12,6 +12,20 @@ static OSSL_FUNC_kem_decapsulate_fn oqs_hyb_kem_decaps;
 
 /// EVP KEM functions
 
+#define DEBUG_QKD
+
+#ifdef NDEBUG
+#define QKD_DEBUG(fmt, ...)
+#else
+#ifdef DEBUG_QKD
+#define QKD_DEBUG(fmt, ...)                                                    \
+    fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__,         \
+            ##__VA_ARGS__)
+#else
+#define QKD_DEBUG(fmt, ...)
+#endif
+#endif
+
 static int oqs_evp_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
                                       size_t *ctlen, unsigned char *secret,
                                       size_t *secretlen, int keyslot) {
@@ -22,6 +36,7 @@ static int oqs_evp_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
 
     size_t pubkey_kexlen = 0;
     size_t kexDeriveLen = 0, pkeylen = 0;
+
     unsigned char *pubkey_kex = pkemctx->kem->comp_pubkey[keyslot];
 
     // Free at err:
@@ -96,6 +111,8 @@ static int oqs_evp_kem_decaps_keyslot(void *vpkemctx, unsigned char *secret,
     int ret = OQS_SUCCESS, ret2 = 0;
     const PROV_OQSKEM_CTX *pkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
     const OQSX_EVP_CTX *evp_ctx = pkemctx->kem->oqsx_provider_ctx.oqsx_evp_ctx;
+
+    QKD_DEBUG("EVP DECAPS KEYSLOT: %d", keyslot);
 
     size_t pubkey_kexlen = evp_ctx->evp_info->length_public_key;
     size_t kexDeriveLen = evp_ctx->evp_info->kex_length_secret;
@@ -200,7 +217,27 @@ static int oqs_hyb_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     ret = oqs_qs_kem_encaps_keyslot(vpkemctx, ctPQ, &ctLenPQ, secretPQ,
                                     &secretLenPQ,
                                     oqsx_key->reverse_share ? 0 : 1);
+#if !defined(NDEBUG) && defined(DEBUG_QKD)
+    QKD_DEBUG("ENCAPS: ret value: %d", ret);
+    // print oqsx_key->reverse_share
+    QKD_DEBUG("ENCAPS: Reverse share: %d", oqsx_key->reverse_share);
+
+    printf("ENCAPS: PQ Shared Secret (%zu bytes): ", secretLenPQ);
+    for (size_t i = 0; i < secretLenPQ; i++) {
+        printf("%02x", secretPQ[i]);
+    }
+    printf("\nENCAPS: Classical Shared Secret (%zu bytes): ", secretLenClassical);
+    for (size_t i = 0; i < secretLenClassical; i++) {
+        printf("%02x", secretClassical[i]);
+    }
+    printf("\nENCAPS: Full Shared Secret (%zu bytes): ", *secretlen);
+    for (size_t i = 0; i < *secretlen; i++) {
+        printf("%02x", secret[i]);
+    }
+    printf("\n");
+#endif
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
+    QKD_DEBUG("After first qs_kem encaps_keyslot call");
 
 err:
     return ret;
@@ -257,9 +294,31 @@ static int oqs_hyb_kem_decaps(void *vpkemctx, unsigned char *secret,
         vpkemctx, secretClassical, &secretLenClassical, ctClassical,
         ctLenClassical, oqsx_key->reverse_share ? 1 : 0);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
+    QKD_DEBUG("After first evp_kem decaps_keyslot call");
     ret = oqs_qs_kem_decaps_keyslot(vpkemctx, secretPQ, &secretLenPQ, ctPQ,
                                     ctLenPQ, oqsx_key->reverse_share ? 0 : 1);
+#if !defined(NDEBUG) && defined(DEBUG_QKD)
+    QKD_DEBUG("DECAPS: ret value: %d", ret);
+    // print oqsx_key->reverse_share
+    QKD_DEBUG("DECAPS: Reverse share: %d", oqsx_key->reverse_share);
+
+    printf("DECAPS: PQ Shared Secret (%zu bytes): ", secretLenPQ);
+    for (size_t i = 0; i < secretLenPQ; i++) {
+        printf("%02x", secretPQ[i]);
+    }
+    printf("\nDECAPS: Classical Shared Secret (%zu bytes): ", secretLenClassical);
+    for (size_t i = 0; i < secretLenClassical; i++) {
+        printf("%02x", secretClassical[i]);
+    }
+    printf("\nDECAPS: Full Shared Secret (%zu bytes): ", *secretlen);
+    for (size_t i = 0; i < *secretlen; i++) {
+        printf("%02x", secret[i]);
+    }
+    printf("\n");
+#endif
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
+
+    QKD_DEBUG("After first qs_kem decaps_keyslot call");
 
 err:
     return ret;

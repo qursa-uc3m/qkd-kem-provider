@@ -71,7 +71,7 @@
 
 /* TODO_QKD: check if this is necessary. Optional: Add QKD-specific parameter
  * for key_id if needed */
-#define OQS_HYBRID_PKEY_PARAM_QKD_KEY_ID "hybrid_qkd_key_id"
+//#define OQS_HYBRID_PKEY_PARAM_QKD_KEY_ID "hybrid_qkd_key_id"
 
 /* Extras for OQS extension */
 

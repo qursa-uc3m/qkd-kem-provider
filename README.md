@@ -24,7 +24,8 @@ git clone https://github.com/qursa-uc3m/qkd-etsi-api
 cd qkd-etsi-api
 mkdir build
 cd build
-cmake -DQKD_BACKEND=simulated -DQKD_DEBUG_LEVEL=4 -DBUILD_TESTS=ON ..
+cmake -DENABLE_ETSI004=OFF -DENABLE_ETSI014=ON -DQKD_BACKE
+ND=simulated -DBUILD_TESTS=ON ..
 make
 sudo make install
 ```
