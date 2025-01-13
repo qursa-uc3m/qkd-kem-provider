@@ -72,3 +72,36 @@ Run only TLS Group tests
 ```bash
 ./run_oqs_tests.sh --groups
 ```
+
+### TLS test
+
+You can test the QKD-KEM groups for TLS in the following way.
+
+First build a OpenSSL (is good to use a clean install to avoid conflicts with your system OpenSSL). You can use the following script to build OpenSSL:
+
+```bash
+./scripts/install_openssl3.sh
+```
+
+Then you can use the `generate_cert.sh` script to generate the certificates for the server and the client.
+
+Next, use `./scripts/oqs_env.sh` to set the environment variables to use the built OpenSSL and the QKD-KEM provider library that we have built under `_build/lib`. You have to set these variables in two different terminals.
+
+Then, in one terminal run the server
+
+```bash
+openssl s_server -cert <certs_dir>/rsa/rsa_2048_entity_cert.pem -key certs/rsa/rsa_2048_entity_key.pem -www -tls1_3 -groups qkd_kyber768 -port 4433 -provider default -provider qkdkemprovider
+```
+
+and in the other terminal run the client
+
+```bash
+openssl s_client -connect localhost:4433 -groups qkd_kyber768 -provider default -provider qkdkemprovider
+```
+
+Notice that Wireshark won't be able to recognize the groups, so you will see
+
+```text
+Supported Groups (1 group)
+	Supported Group: Unknown (0x303c)
+```

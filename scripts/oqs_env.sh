@@ -14,6 +14,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Get the project root directory (two levels up from scripts/)
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
 
+
+
 # Export environment variables
 export OPENSSL_CONF="${OQS_DIR}/oqs-provider/scripts/openssl-ca.cnf"
 export OPENSSL_MODULES="${PROJECT_DIR}/_build/lib"

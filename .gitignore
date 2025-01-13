@@ -27,3 +27,5 @@ scripts/__pycache__
 # MacOS
 .DS_Store
 
+# certificates
+*.pem
