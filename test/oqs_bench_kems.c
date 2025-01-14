@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Use a simple relative path to create benchmarks in the parent directory
-    snprintf(csv_path, sizeof(csv_path), "../../benchmarks/kem_bench_%s.csv", timestamp);
+    snprintf(csv_path, sizeof(csv_path), "../../benchmarks/kem_bench_%s_%zu_iter.csv", timestamp,num_iterations);
 
     csv_file = fopen(csv_path, "w");
     if (!csv_file) {
