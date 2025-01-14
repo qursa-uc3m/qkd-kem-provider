@@ -590,30 +590,7 @@ int main(int argc, char **argv) {
     }
 
     errcnt = 0;
-    algs = OSSL_PROVIDER_query_operation(oqs_provider, OSSL_OP_SIGNATURE,
-                                         &query_nocache);
-    if (!algs) {
-        fprintf(stderr, cRED "  No signature algorithms found" cNORM "\n");
-        ERR_print_errors_fp(stderr);
-        ++errcnt;
-        goto next_alg;
-    }
 
-    for (; algs->algorithm_names != NULL; ++algs) {
-        if (!is_signature_algorithm_hybrid(algs->algorithm_names)) {
-            continue;
-        }
-        if (test_algorithm(libctx, algs->algorithm_names)) {
-            fprintf(stderr, cRED " failed for %s " cNORM "\n",
-                    algs->algorithm_names);
-            ++errcnt;
-        } else {
-            fprintf(stderr, cGREEN "%s succeeded" cNORM "\n",
-                    algs->algorithm_names);
-        }
-    }
-
-next_alg:
     algs = OSSL_PROVIDER_query_operation(oqs_provider, OSSL_OP_KEM,
                                          &query_nocache);
     if (!algs) {

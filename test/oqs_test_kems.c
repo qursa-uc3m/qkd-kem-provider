@@ -49,6 +49,28 @@ static int test_oqs_kems(const char *kemalg_name) {
     // test with built-in digest only if default provider is active:
     // TBD revisit when hybrids are activated: They always need default
     // provider
+    // Try to load default provider first and check for errors
+    OSSL_PROVIDER *defprov = OSSL_PROVIDER_load(libctx, "default");
+    if (!defprov) {
+        QKD_DEBUG("Failed to load default provider");
+        ERR_print_errors_fp(stderr);
+    } else {
+        QKD_DEBUG("Successfully loaded default provider");
+    }
+    OSSL_PROVIDER *oqsprov = NULL;
+    // Load the QKD provider with detailed error checking
+    oqsprov = OSSL_PROVIDER_load(libctx, modulename);
+    if (!oqsprov) {
+        QKD_DEBUG("Failed to load provider %s", modulename);
+        unsigned long err;
+        char err_buf[256];
+        while ((err = ERR_get_error())) {
+            ERR_error_string_n(err, err_buf, sizeof(err_buf));
+            QKD_DEBUG("OpenSSL error: %s", err_buf);
+        }
+        return 1;
+    }
+    QKD_DEBUG("Successfully loaded provider %s", modulename);
     if (OSSL_PROVIDER_available(libctx, "default")) {
         QKD_DEBUG("Generating key pair...\n");
         testresult &= (ctx = EVP_PKEY_CTX_new_from_name(libctx, kemalg_name,

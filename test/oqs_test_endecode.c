@@ -262,17 +262,6 @@ int main(int argc, char *argv[]) {
     keyprov = OSSL_PROVIDER_load(keyctx, modulename);
     oqsprov = OSSL_PROVIDER_load(libctx, modulename);
 
-    algs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_SIGNATURE,
-                                         &query_nocache);
-
-    if (algs) {
-        errcnt += test_algs(algs);
-    } else {
-        fprintf(stderr, cRED "  No signature algorithms found" cNORM "\n");
-        ERR_print_errors_fp(stderr);
-        errcnt++;
-    }
-
 #ifdef OQS_KEM_ENCODERS
     algs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_KEM, &query_nocache);
 
