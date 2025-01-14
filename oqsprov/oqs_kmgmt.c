@@ -116,10 +116,6 @@ static int oqsx_has(const void *keydata, int selection) {
 static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
                               int *idx_pq, int *idx_qkd) {
     // TODO_QKD: put in a shared file with oqs_kmgmt.c and oqsprov_keys.c
-    int reverse_share = (key->keytype == KEY_TYPE_ECP_HYB_KEM ||
-                         key->keytype == KEY_TYPE_ECX_HYB_KEM) &&
-                        key->reverse_share;
-
     if (idx_qkd) {
         // QKD is always last
         *idx_qkd = key->numkeys - 1;
@@ -135,7 +131,7 @@ static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
             // TODO_QKD: implement the triple hybrid case
         } else if (key->numkeys == 3) {
             // Classical + PQC + QKD triple hybrid
-            if (reverse_share) {
+            if (key->reverse_share) {
                 // PQ, Classical, QKD order
                 if (idx_classic)
                     *idx_classic = 1;
@@ -149,21 +145,6 @@ static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
                     *idx_pq = 1;
             }
         }
-    } else {
-        // Regular hybrid cases (no QKD)
-        if (reverse_share) {
-            if (idx_classic)
-                *idx_classic = key->numkeys - 1;
-            if (idx_pq)
-                *idx_pq = 0;
-        } else {
-            if (idx_classic)
-                *idx_classic = 0;
-            if (idx_pq)
-                *idx_pq = key->numkeys - 1;
-        }
-        if (idx_qkd)
-            *idx_qkd = -1; // No QKD component
     }
 }
 
@@ -400,26 +381,13 @@ static int oqsx_key_is_hybrid(const OQSX_KEY *oqsxk) {
         return 0;
     // TODO_QKD: handle this properly
     //  Check key type first
-    int is_hybrid_type = (oqsxk->keytype == KEY_TYPE_ECP_HYB_KEM ||
-                          oqsxk->keytype == KEY_TYPE_ECX_HYB_KEM ||
-                          oqsxk->keytype == KEY_TYPE_HYB_SIG ||
-                          oqsxk->keytype == KEY_TYPE_QKD_HYB_KEM);
+    int is_hybrid_type = (oqsxk->keytype == KEY_TYPE_QKD_HYB_KEM);
 
     if (!is_hybrid_type)
         return 0;
 
     // Now handle different hybrid scenarios
     switch (oqsxk->keytype) {
-    case KEY_TYPE_ECP_HYB_KEM:
-    case KEY_TYPE_ECX_HYB_KEM:
-    case KEY_TYPE_HYB_SIG:
-        // Traditional hybrid: needs classical key and 2 components
-        if (oqsxk->numkeys == 2 && oqsxk->classical_pkey != NULL) {
-            OQS_KM_PRINTF("OQSKEYMGMT: key is traditional hybrid\n");
-            return 1;
-        }
-        break;
-
     case KEY_TYPE_QKD_HYB_KEM:
         // QKD hybrid cases
         if (oqsxk->numkeys == 2) {
@@ -585,17 +553,9 @@ static int oqsx_get_params(void *key, OSSL_PARAM params[]) {
         // hybrid KEMs are special in that the classic length information
         // shall not be passed out:
         // TODO_QKD: double check this
-        if (oqsxk->keytype == KEY_TYPE_ECP_HYB_KEM ||
-            oqsxk->keytype == KEY_TYPE_ECX_HYB_KEM) {
-            if (!OSSL_PARAM_set_octet_string(
-                    p, (char *)oqsxk->pubkey + SIZE_OF_UINT32,
-                    oqsxk->pubkeylen - SIZE_OF_UINT32))
-                return 0;
-        } else {
-            if (!OSSL_PARAM_set_octet_string(p, oqsxk->pubkey,
-                                             oqsxk->pubkeylen))
-                return 0;
-        }
+        if (!OSSL_PARAM_set_octet_string(p, oqsxk->pubkey,
+                                            oqsxk->pubkeylen))
+            return 0;
     }
     if ((p = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_PUB_KEY)) != NULL) {
         if (!OSSL_PARAM_set_octet_string(p, oqsxk->pubkey, oqsxk->pubkeylen))
@@ -654,22 +614,10 @@ static int oqsx_set_params(void *key, const OSSL_PARAM params[]) {
         size_t used_len;
         int classic_pubkey_len;
         // TODO_QKD: check if further adaptation is needed
-        if (oqsxkey->keytype == KEY_TYPE_ECP_HYB_KEM ||
-            oqsxkey->keytype == KEY_TYPE_ECX_HYB_KEM) {
-            // classic key len already stored by key setup; only data
-            // needs to be filled in
-            if (p->data_size != oqsxkey->pubkeylen - SIZE_OF_UINT32 ||
-                !OSSL_PARAM_get_octet_string(
-                    p, &oqsxkey->comp_pubkey[0],
-                    oqsxkey->pubkeylen - SIZE_OF_UINT32, &used_len)) {
-                return 0;
-            }
-        } else {
-            if (p->data_size != oqsxkey->pubkeylen ||
-                !OSSL_PARAM_get_octet_string(p, &oqsxkey->pubkey,
-                                             oqsxkey->pubkeylen, &used_len)) {
-                return 0;
-            }
+        if (p->data_size != oqsxkey->pubkeylen ||
+            !OSSL_PARAM_get_octet_string(p, &oqsxkey->pubkey,
+                                            oqsxkey->pubkeylen, &used_len)) {
+            return 0;
         }
         OPENSSL_clear_free(oqsxkey->privkey, oqsxkey->privkeylen);
         oqsxkey->privkey = NULL;

@@ -151,13 +151,7 @@ struct oqsx_provider_ctx_st {
 typedef struct oqsx_provider_ctx_st OQSX_PROVIDER_CTX;
 
 enum oqsx_key_type_en {
-    KEY_TYPE_SIG,
-    KEY_TYPE_KEM,
-    KEY_TYPE_ECP_HYB_KEM,
-    KEY_TYPE_ECX_HYB_KEM,
     KEY_TYPE_QKD_HYB_KEM,
-    KEY_TYPE_HYB_SIG,
-    KEY_TYPE_CMP_SIG
 };
 
 typedef enum oqsx_key_type_en OQSX_KEY_TYPE;

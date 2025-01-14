@@ -37,10 +37,6 @@ static OSSL_FUNC_kem_freectx_fn oqs_qkd_kem_freectx;
 static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
                               int *idx_pq, int *idx_qkd) {
     // TODO_QKD: put in a shared file with oqs_kmgmt.c and oqsprov_keys.c
-    int reverse_share = (key->keytype == KEY_TYPE_ECP_HYB_KEM ||
-                         key->keytype == KEY_TYPE_ECX_HYB_KEM) &&
-                        key->reverse_share;
-
     if (idx_qkd) {
         // QKD is always last
         *idx_qkd = key->numkeys - 1;
@@ -56,7 +52,7 @@ static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
             // TODO_QKD: implement the triple hybrid case
         } else if (key->numkeys == 3) {
             // Classical + PQC + QKD triple hybrid
-            if (reverse_share) {
+            if (key->reverse_share) {
                 // PQ, Classical, QKD order
                 if (idx_classic)
                     *idx_classic = 1;
@@ -70,22 +66,6 @@ static void oqsx_comp_set_idx(const OQSX_KEY *key, int *idx_classic,
                     *idx_pq = 1;
             }
         }
-    } else {
-
-        // Regular hybrid cases (no QKD)
-        if (reverse_share) {
-            if (idx_classic)
-                *idx_classic = key->numkeys - 1;
-            if (idx_pq)
-                *idx_pq = 0;
-        } else {
-            if (idx_classic)
-                *idx_classic = 0;
-            if (idx_pq)
-                *idx_pq = key->numkeys - 1;
-        }
-        if (idx_qkd)
-            *idx_qkd = -1; // No QKD component
     }
 }
 
