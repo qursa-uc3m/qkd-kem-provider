@@ -65,6 +65,8 @@ typedef int key_to_der_fn(BIO *out, const void *key, int key_nid,
                           i2d_of_void *k2d, struct key2any_ctx_st *ctx);
 typedef int write_bio_of_void_fn(BIO *bp, const void *x);
 
+#ifdef OQS_KEM_ENCODERS
+
 /* Free the blob allocated during key_to_paramstring_fn */
 static void free_asn1_data(int type, void *data) {
     switch (type) {
@@ -144,6 +146,8 @@ static X509_SIG *key_to_encp8(const void *key, int key_nid, void *params,
     }
     return p8;
 }
+
+
 
 static X509_PUBKEY *oqsx_key_to_pubkey(const void *key, int key_nid,
                                        void *params, int params_type,
@@ -353,6 +357,8 @@ static int key_to_spki_pem_pub_bio(BIO *out, const void *key, int key_nid,
     return ret;
 }
 
+#endif
+
 /*
  * key_to_type_specific_* produce encoded output with type specific key data,
  * no envelopment; the same kind of output as the type specific i2d_ and
@@ -450,6 +456,8 @@ called\n");
 */
 /* ---------------------------------------------------------------------- */
 
+#ifdef OQS_KEM_ENCODERS
+
 static int prepare_oqsx_params(const void *oqsxkey, int nid, int save,
                                void **pstr, int *pstrtype) {
     ASN1_OBJECT *params = NULL;
@@ -483,6 +491,8 @@ static int prepare_oqsx_params(const void *oqsxkey, int nid, int save,
     *pstrtype = V_ASN1_OBJECT;
     return 1;
 }
+
+
 
 static int oqsx_spki_pub_to_der(const void *vxkey, unsigned char **pder) {
     const OQSX_KEY *oqsxkey = vxkey;
@@ -953,6 +963,8 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
     return keybloblen;
 }
 
+#endif
+
 #define oqsx_epki_priv_to_der oqsx_pki_priv_to_der
 
 /*
@@ -1040,6 +1052,8 @@ static int oqsx_pki_priv_to_der(const void *vxkey, unsigned char **pder) {
 ///// OQS_TEMPLATE_FRAGMENT_ENCODER_DEFINES_END
 
 /* ---------------------------------------------------------------------- */
+
+#ifdef OQS_KEM_ENCODERS
 
 static OSSL_FUNC_decoder_newctx_fn key2any_newctx;
 static OSSL_FUNC_decoder_freectx_fn key2any_freectx;
@@ -1196,6 +1210,8 @@ static int key2any_encode(struct key2any_ctx_st *ctx, OSSL_CORE_BIO *cout,
     OQS_ENC_PRINTF2(" encode result: %d\n", ret);
     return ret;
 }
+
+#endif
 
 #define DO_PRIVATE_KEY_selection_mask OSSL_KEYMGMT_SELECT_PRIVATE_KEY
 #define DO_PRIVATE_KEY(impl, type, kind, output)                               \
@@ -1384,6 +1400,8 @@ static int key2any_encode(struct key2any_ctx_st *ctx, OSSL_CORE_BIO *cout,
  */
 
 #define LABELED_BUF_PRINT_WIDTH 15
+
+#ifdef OQS_KEM_ENCODERS
 
 static int print_labeled_buf(BIO *out, const char *label,
                              const unsigned char *buf, size_t buflen) {
@@ -1630,6 +1648,8 @@ key2text_encode(void *vctx, const void *key, int selection, OSSL_CORE_BIO *cout,
 
     return ret;
 }
+
+#endif
 
 #define MAKE_TEXT_ENCODER(oqskemhyb, impl)                                     \
     static OSSL_FUNC_encoder_import_object_fn impl##2text_import_object;       \

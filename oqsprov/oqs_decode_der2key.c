@@ -159,6 +159,8 @@ int oqs_read_der(PROV_OQS_CTX *provctx, OSSL_CORE_BIO *cin,
 
 typedef void *key_from_pkcs8_t(const PKCS8_PRIV_KEY_INFO *p8inf,
                                OSSL_LIB_CTX *libctx, const char *propq);
+
+#ifdef OQS_KEM_ENCODERS
 static void *oqs_der2key_decode_p8(const unsigned char **input_der,
                                    long input_der_len,
                                    struct der2key_ctx_st *ctx,
@@ -180,6 +182,7 @@ static void *oqs_der2key_decode_p8(const unsigned char **input_der,
 
     return key;
 }
+#endif
 
 OQSX_KEY *oqsx_d2i_PUBKEY(OQSX_KEY **a, const unsigned char **pp, long length) {
     OQSX_KEY *key = NULL;
@@ -206,6 +209,8 @@ OQSX_KEY *oqsx_d2i_PUBKEY(OQSX_KEY **a, const unsigned char **pp, long length) {
 }
 
 /* ---------------------------------------------------------------------- */
+
+#ifdef OQS_KEM_ENCODERS
 
 static OSSL_FUNC_decoder_freectx_fn der2key_freectx;
 static OSSL_FUNC_decoder_decode_fn oqs_der2key_decode;
@@ -429,6 +434,8 @@ static void oqsx_key_adjust(void *key, struct der2key_ctx_st *ctx) {
 
     oqsx_key_set0_libctx(key, PROV_OQS_LIBCTX_OF(ctx->provctx));
 }
+
+#endif
 
 // OQS provider uses NIDs generated at load time as EVP_type identifiers
 // so initially this must be 0 and set to a real value by OBJ_sn2nid later

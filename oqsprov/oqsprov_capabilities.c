@@ -84,60 +84,60 @@ static const OSSL_PARAM oqs_param_group_list[][11] = {
 ///// OQS_TEMPLATE_FRAGMENT_GROUP_NAMES_START
 
 #ifdef OQS_ENABLE_KEM_frodokem_640_aes
-    OQS_GROUP_ENTRY(qkd_frodo640aes, qkd_frodo640aes, qkd_frodo640aes, 1),
+    OQS_GROUP_ENTRY(qkd_frodo640aes, qkd_frodo640aes, qkd_frodo640aes, 0),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_640_shake
-    OQS_GROUP_ENTRY(qkd_frodo640shake, qkd_frodo640shake, qkd_frodo640shake, 2),
+    OQS_GROUP_ENTRY(qkd_frodo640shake, qkd_frodo640shake, qkd_frodo640shake, 1),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_976_aes
-    OQS_GROUP_ENTRY(qkd_frodo976aes, qkd_frodo976aes, qkd_frodo976aes, 3),
+    OQS_GROUP_ENTRY(qkd_frodo976aes, qkd_frodo976aes, qkd_frodo976aes, 2),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_976_shake
     OQS_GROUP_ENTRY(qkd_frodo976shake, qkd_frodo976shake, qkd_frodo976shake,
-                    4),
+                    3),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_1344_aes
-    OQS_GROUP_ENTRY(qkd_frodo1344aes, qkd_frodo1344aes, qkd_frodo1344aes, 5),
+    OQS_GROUP_ENTRY(qkd_frodo1344aes, qkd_frodo1344aes, qkd_frodo1344aes, 4),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_1344_shake
     OQS_GROUP_ENTRY(qkd_frodo1344shake, qkd_frodo1344shake, qkd_frodo1344shake,
-                    6),
+                    5),
 #endif
 #ifdef OQS_ENABLE_KEM_kyber_512
-    OQS_GROUP_ENTRY(qkd_kyber512, qkd_kyber512, qkd_kyber512, 7),
+    OQS_GROUP_ENTRY(qkd_kyber512, qkd_kyber512, qkd_kyber512, 6),
 #endif
 #ifdef OQS_ENABLE_KEM_kyber_768
-    OQS_GROUP_ENTRY(qkd_kyber768, qkd_kyber768, qkd_kyber768, 8),
+    OQS_GROUP_ENTRY(qkd_kyber768, qkd_kyber768, qkd_kyber768, 7),
 #endif
 #ifdef OQS_ENABLE_KEM_kyber_1024
-    OQS_GROUP_ENTRY(qkd_kyber1024, qkd_kyber1024, qkd_kyber1024, 9),
+    OQS_GROUP_ENTRY(qkd_kyber1024, qkd_kyber1024, qkd_kyber1024, 8),
 #endif
 #ifdef OQS_ENABLE_KEM_ml_kem_512
-    OQS_GROUP_ENTRY(qkd_mlkem512, qkd_mlkem512, qkd_mlkem512, 10),
+    OQS_GROUP_ENTRY(qkd_mlkem512, qkd_mlkem512, qkd_mlkem512, 9),
 #endif
 #ifdef OQS_ENABLE_KEM_ml_kem_768
-    OQS_GROUP_ENTRY(qkd_mlkem768, qkd_mlkem768, qkd_mlkem768, 11),
+    OQS_GROUP_ENTRY(qkd_mlkem768, qkd_mlkem768, qkd_mlkem768, 10),
 #endif
 #ifdef OQS_ENABLE_KEM_ml_kem_1024
-    OQS_GROUP_ENTRY(qkd_mlkem1024, qkd_mlkem1024, qkd_mlkem1024, 12),
+    OQS_GROUP_ENTRY(qkd_mlkem1024, qkd_mlkem1024, qkd_mlkem1024, 11),
 #endif
 #ifdef OQS_ENABLE_KEM_bike_l1
-    OQS_GROUP_ENTRY(qkd_bikel1, qkd_bikel1, qkd_bikel1, 13),
+    OQS_GROUP_ENTRY(qkd_bikel1, qkd_bikel1, qkd_bikel1, 12),
 #endif
 #ifdef OQS_ENABLE_KEM_bike_l3
-    OQS_GROUP_ENTRY(qkd_bikel3, qkd_bikel3, qkd_bikel3, 14),
+    OQS_GROUP_ENTRY(qkd_bikel3, qkd_bikel3, qkd_bikel3, 13),
 #endif
 #ifdef OQS_ENABLE_KEM_bike_l5
-    OQS_GROUP_ENTRY(qkd_bikel5, qkd_bikel5, qkd_bikel5, 15),
+    OQS_GROUP_ENTRY(qkd_bikel5, qkd_bikel5, qkd_bikel5, 14),
 #endif
 #ifdef OQS_ENABLE_KEM_hqc_128
-    OQS_GROUP_ENTRY(qkd_hqc128, qkd_hqc128, qkd_hqc128, 16),
+    OQS_GROUP_ENTRY(qkd_hqc128, qkd_hqc128, qkd_hqc128, 15),
 #endif
 #ifdef OQS_ENABLE_KEM_hqc_192
-    OQS_GROUP_ENTRY(qkd_hqc192, qkd_hqc192, qkd_hqc192, 17),
+    OQS_GROUP_ENTRY(qkd_hqc192, qkd_hqc192, qkd_hqc192, 16),
 #endif
 #ifdef OQS_ENABLE_KEM_hqc_256
-    OQS_GROUP_ENTRY(qkd_hqc256, qkd_hqc256, qkd_hqc256, 18),
+    OQS_GROUP_ENTRY(qkd_hqc256, qkd_hqc256, qkd_hqc256, 17),
 #endif
     ///// OQS_TEMPLATE_FRAGMENT_GROUP_NAMES_END
 };

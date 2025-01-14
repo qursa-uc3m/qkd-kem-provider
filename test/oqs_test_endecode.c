@@ -51,6 +51,8 @@ static ENDECODE_PARAMS test_params_list[] = {
      OSSL_KEYMGMT_SELECT_PUBLIC_KEY | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
 };
 
+#ifdef OQS_KEM_ENCODERS
+
 static EVP_PKEY *oqstest_make_key(const char *type, EVP_PKEY *template,
                                   OSSL_PARAM *genparams) {
     EVP_PKEY *pkey = NULL;
@@ -240,6 +242,7 @@ static int test_algs(const OSSL_ALGORITHM *algs) {
     }
     return errcnt;
 }
+#endif /* OQS_KEM_ENCODERS */
 
 int main(int argc, char *argv[]) {
     size_t i;

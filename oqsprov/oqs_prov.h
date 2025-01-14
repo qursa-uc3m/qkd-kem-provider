@@ -274,10 +274,7 @@ int oqs_patch_codepoints(void);
 
 /* Function prototypes */
 
-extern const OSSL_DISPATCH oqs_generic_kem_functions[];
-extern const OSSL_DISPATCH oqs_hybrid_kem_functions[];
 extern const OSSL_DISPATCH oqs_qkd_kem_functions[];
-extern const OSSL_DISPATCH oqs_signature_functions[];
 
 ///// OQS_TEMPLATE_FRAGMENT_ENDECODER_FUNCTIONS_START
 #ifdef OQS_KEM_ENCODERS
