@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <limits.h>
+#include <math.h>
 
 #include "oqs/oqs.h"
 #include "test_common.h"
@@ -35,6 +36,20 @@ static OSSL_LIB_CTX *libctx = NULL;
 static char *modulename = NULL;
 static char *configfile = NULL;
 static FILE *csv_file = NULL;
+
+static void print_progress_bar(int current, int total, const char* algorithm) {
+    const int bar_width = 50;
+    float progress = (float)current / total;
+    int filled = (int)(bar_width * progress);
+
+    printf("\rBenchmarking: %-20s [", algorithm);
+    for (int i = 0; i < bar_width; i++) {
+        if (i < filled) printf("=");
+        else printf(" ");
+    }
+    printf("] %.1f%%", progress * 100);
+    fflush(stdout);
+}
 
 static inline double get_time_ms(void) {
     struct timespec ts;
@@ -141,11 +156,8 @@ static int bench_oqs_kems(const char *kemalg_name, size_t num_iterations) {
             // Write results to CSV
             write_csv_result(kemalg_name, iter, &times);
 
-            // Print progress every 10 iterations
-            if ((iter + 1) % 10 == 0 || iter == 0) {
-                printf("Completed %zu/%zu iterations for %s\n", 
-                       iter + 1, num_iterations, kemalg_name);
-            }
+            // Progress bar
+            print_progress_bar(iter + 1, num_iterations, kemalg_name);
 
             // Cleanup for next iteration
             EVP_PKEY_free(key);
@@ -161,8 +173,7 @@ static int bench_oqs_kems(const char *kemalg_name, size_t num_iterations) {
         }
     }
 
-    printf("Benchmark complete for %s\n", kemalg_name);
-    return testresult;
+    printf("\n");
 
 err:
     EVP_PKEY_free(key);
@@ -235,7 +246,6 @@ int main(int argc, char *argv[]) {
     kemalgs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_KEM, &query_nocache);
     if (kemalgs) {
         for (; kemalgs->algorithm_names != NULL; kemalgs++) {
-            printf("\nBenchmarking: %s\n", kemalgs->algorithm_names);
             if (bench_oqs_kems(kemalgs->algorithm_names, num_iterations)) {
                 fprintf(stderr, cGREEN "  Benchmark completed: %s" cNORM "\n",
                         kemalgs->algorithm_names);
