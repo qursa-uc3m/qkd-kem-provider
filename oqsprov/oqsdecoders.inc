@@ -37,76 +37,76 @@
 #ifdef OQS_KEM_ENCODERS
 
 #ifdef OQS_ENABLE_KEM_frodokem_640_aes
-DECODER_w_structure("qkd_frodo640aes", der, PrivateKeyInfo, p256_frodo640aes),
-DECODER_w_structure("qkd_frodo640aes", der, SubjectPublicKeyInfo, p256_frodo640aes),
+DECODER_w_structure("qkd_frodo640aes", der, PrivateKeyInfo, qkd_frodo640aes),
+DECODER_w_structure("qkd_frodo640aes", der, SubjectPublicKeyInfo, qkd_frodo640aes),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_640_shake
-DECODER_w_structure("qkd_frodo640shake", der, PrivateKeyInfo, p256_frodo640shake),
-DECODER_w_structure("qkd_frodo640shake", der, SubjectPublicKeyInfo, p256_frodo640shake),
+DECODER_w_structure("qkd_frodo640shake", der, PrivateKeyInfo, qkd_frodo640shake),
+DECODER_w_structure("qkd_frodo640shake", der, SubjectPublicKeyInfo, qkd_frodo640shake),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_976_aes
-DECODER_w_structure("qkd_frodo976aes", der, PrivateKeyInfo, p384_frodo976aes),
-DECODER_w_structure("qkd_frodo976aes", der, SubjectPublicKeyInfo, p384_frodo976aes),
+DECODER_w_structure("qkd_frodo976aes", der, PrivateKeyInfo, qkd_frodo976aes),
+DECODER_w_structure("qkd_frodo976aes", der, SubjectPublicKeyInfo, qkd_frodo976aes),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_976_shake
-DECODER_w_structure("qkd_frodo976shake", der, PrivateKeyInfo, p384_frodo976shake),
-DECODER_w_structure("qkd_frodo976shake", der, SubjectPublicKeyInfo, p384_frodo976shake),
+DECODER_w_structure("qkd_frodo976shake", der, PrivateKeyInfo, qkd_frodo976shake),
+DECODER_w_structure("qkd_frodo976shake", der, SubjectPublicKeyInfo, qkd_frodo976shake),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_1344_aes
-DECODER_w_structure("qkd_frodo1344aes", der, PrivateKeyInfo, p521_frodo1344aes),
-DECODER_w_structure("qkd_frodo1344aes", der, SubjectPublicKeyInfo, p521_frodo1344aes),
+DECODER_w_structure("qkd_frodo1344aes", der, PrivateKeyInfo, qkd_frodo1344aes),
+DECODER_w_structure("qkd_frodo1344aes", der, SubjectPublicKeyInfo, qkd_frodo1344aes),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_1344_shake
-DECODER_w_structure("qkd_frodo1344shake", der, PrivateKeyInfo, p521_frodo1344shake),
-DECODER_w_structure("qkd_frodo1344shake", der, SubjectPublicKeyInfo, p521_frodo1344shake),
+DECODER_w_structure("qkd_frodo1344shake", der, PrivateKeyInfo, qkd_frodo1344shake),
+DECODER_w_structure("qkd_frodo1344shake", der, SubjectPublicKeyInfo, qkd_frodo1344shake),
 #endif
 #ifdef OQS_ENABLE_KEM_kyber_512
-DECODER_w_structure("qkd_kyber512", der, PrivateKeyInfo, p256_kyber512),
-DECODER_w_structure("qkd_kyber512", der, SubjectPublicKeyInfo, p256_kyber512),
+DECODER_w_structure("qkd_kyber512", der, PrivateKeyInfo, qkd_kyber512),
+DECODER_w_structure("qkd_kyber512", der, SubjectPublicKeyInfo, qkd_kyber512),
 #endif
 #ifdef OQS_ENABLE_KEM_kyber_768
-DECODER_w_structure("qkd_kyber768", der, PrivateKeyInfo, p384_kyber768),
-DECODER_w_structure("qkd_kyber768", der, SubjectPublicKeyInfo, p384_kyber768),
+DECODER_w_structure("qkd_kyber768", der, PrivateKeyInfo, qkd_kyber768),
+DECODER_w_structure("qkd_kyber768", der, SubjectPublicKeyInfo, qkd_kyber768),
 #endif
 #ifdef OQS_ENABLE_KEM_kyber_1024
-DECODER_w_structure("qkd_kyber1024", der, PrivateKeyInfo, p521_kyber1024),
-DECODER_w_structure("qkd_kyber1024", der, SubjectPublicKeyInfo, p521_kyber1024),
+DECODER_w_structure("qkd_kyber1024", der, PrivateKeyInfo, qkd_kyber1024),
+DECODER_w_structure("qkd_kyber1024", der, SubjectPublicKeyInfo, qkd_kyber1024),
 #endif
 #ifdef OQS_ENABLE_KEM_ml_kem_512
-DECODER_w_structure("qkd_mlkem512", der, PrivateKeyInfo, p256_mlkem512),
-DECODER_w_structure("qkd_mlkem512", der, SubjectPublicKeyInfo, p256_mlkem512),
+DECODER_w_structure("qkd_mlkem512", der, PrivateKeyInfo, qkd_mlkem512),
+DECODER_w_structure("qkd_mlkem512", der, SubjectPublicKeyInfo, qkd_mlkem512),
 #endif
 #ifdef OQS_ENABLE_KEM_ml_kem_768
-DECODER_w_structure("qkd_mlkem768", der, PrivateKeyInfo, p384_mlkem768),
-DECODER_w_structure("qkd_mlkem768", der, SubjectPublicKeyInfo, p384_mlkem768),
+DECODER_w_structure("qkd_mlkem768", der, PrivateKeyInfo, qkd_mlkem768),
+DECODER_w_structure("qkd_mlkem768", der, SubjectPublicKeyInfo, qkd_mlkem768),
 #endif
 #ifdef OQS_ENABLE_KEM_ml_kem_1024
-DECODER_w_structure("qkd_mlkem1024", der, PrivateKeyInfo, p521_mlkem1024),
-DECODER_w_structure("qkd_mlkem1024", der, SubjectPublicKeyInfo, p521_mlkem1024),
+DECODER_w_structure("qkd_mlkem1024", der, PrivateKeyInfo, qkd_mlkem1024),
+DECODER_w_structure("qkd_mlkem1024", der, SubjectPublicKeyInfo, qkd_mlkem1024),
 #endif
 #ifdef OQS_ENABLE_KEM_bike_l1
-DECODER_w_structure("qkd_bikel1", der, PrivateKeyInfo, p256_bikel1),
-DECODER_w_structure("qkd_bikel1", der, SubjectPublicKeyInfo, p256_bikel1),
+DECODER_w_structure("qkd_bikel1", der, PrivateKeyInfo, qkd_bikel1),
+DECODER_w_structure("qkd_bikel1", der, SubjectPublicKeyInfo, qkd_bikel1),
 #endif
 #ifdef OQS_ENABLE_KEM_bike_l3
-DECODER_w_structure("qkd_bikel3", der, PrivateKeyInfo, p384_bikel3),
-DECODER_w_structure("qkd_bikel3", der, SubjectPublicKeyInfo, p384_bikel3),
+DECODER_w_structure("qkd_bikel3", der, PrivateKeyInfo, qkd_bikel3),
+DECODER_w_structure("qkd_bikel3", der, SubjectPublicKeyInfo, qkd_bikel3),
 #endif
 #ifdef OQS_ENABLE_KEM_bike_l5
-DECODER_w_structure("qkd_bikel5", der, PrivateKeyInfo, p521_bikel5),
-DECODER_w_structure("qkd_bikel5", der, SubjectPublicKeyInfo, p521_bikel5),
+DECODER_w_structure("qkd_bikel5", der, PrivateKeyInfo, qkd_bikel5),
+DECODER_w_structure("qkd_bikel5", der, SubjectPublicKeyInfo, qkd_bikel5),
 #endif
 #ifdef OQS_ENABLE_KEM_hqc_128
-DECODER_w_structure("qkd_hqc128", der, PrivateKeyInfo, p256_hqc128),
-DECODER_w_structure("qkd_hqc128", der, SubjectPublicKeyInfo, p256_hqc128),
+DECODER_w_structure("qkd_hqc128", der, PrivateKeyInfo, qkd_hqc128),
+DECODER_w_structure("qkd_hqc128", der, SubjectPublicKeyInfo, qkd_hqc128),
 #endif
 #ifdef OQS_ENABLE_KEM_hqc_192
-DECODER_w_structure("qkd_hqc192", der, PrivateKeyInfo, p384_hqc192),
-DECODER_w_structure("qkd_hqc192", der, SubjectPublicKeyInfo, p384_hqc192),
+DECODER_w_structure("qkd_hqc192", der, PrivateKeyInfo, qkd_hqc192),
+DECODER_w_structure("qkd_hqc192", der, SubjectPublicKeyInfo, qkd_hqc192),
 #endif
 #ifdef OQS_ENABLE_KEM_hqc_256
-DECODER_w_structure("qkd_hqc256", der, PrivateKeyInfo, p521_hqc256),
-DECODER_w_structure("qkd_hqc256", der, SubjectPublicKeyInfo, p521_hqc256),
+DECODER_w_structure("qkd_hqc256", der, PrivateKeyInfo, qkd_hqc256),
+DECODER_w_structure("qkd_hqc256", der, SubjectPublicKeyInfo, qkd_hqc256),
 #endif
 
 #endif /* OQS_KEM_ENCODERS */
