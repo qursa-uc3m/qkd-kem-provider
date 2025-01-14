@@ -103,5 +103,15 @@ Notice that Wireshark won't be able to recognize the groups, so you will see
 
 ```text
 Supported Groups (1 group)
-	Supported Group: Unknown (0x303c)
+ Supported Group: Unknown (0x303c)
 ```
+
+## Automated with Python
+
+You can also run the following script
+
+```bash
+python3 ./scripts/test_qkd_kem_tls.py
+```
+
+which is based in [open-quantum-safe/oqs-provider/scripts/test_tls_full.py](https://github.com/open-quantum-safe/oqs-provider/blob/main/scripts/test_tls_full.py) and will run the server and the client automatically.
