@@ -11,6 +11,7 @@ show_help() {
     echo "  -k, --kem        Run KEM tests"
     echo "  -g, --groups     Run TLS Group tests"
     echo "  -p, --params     Run EVP PKEY params tests"
+    echo "  -b, --bench N    Run benchmarks with N iterations"
     echo "  -a, --all        Run all tests"
     echo "  -h, --help       Show this help message"
     echo ""
@@ -131,11 +132,41 @@ run_params_test() {
     return $result
 }
 
+# Run KEM benchmarks
+run_kem_bench() {
+    local iterations=$1
+    echo "Running KEM benchmarks with $iterations iterations..."
+    
+    if [ ! -f "_build/test/oqs_bench_kems" ]; then
+        echo "❌ Benchmark binary not found"
+        return 1
+    fi
+
+    cd _build/test
+    echo "Running from directory: $(pwd)"
+
+    ./oqs_bench_kems "qkdkemprovider" "${OPENSSL_CONF}" "$iterations"
+    local result=$?
+    
+    cd "${BASE_DIR}"
+    
+    if [ $result -eq 0 ]; then
+        echo "✅ KEM benchmarks completed"
+    else
+        echo "❌ KEM benchmarks failed"
+        echo "Return code: $result"
+    fi
+    
+    return $result
+}
+
 
 main() {
     local run_kem=0
     local run_groups=0
     local run_params=0
+    local run_bench=0
+    local bench_iterations=0
     local exit_status=0
 
     # Parse command line arguments
@@ -144,6 +175,18 @@ main() {
             -k|--kem)
                 run_kem=1
                 shift
+                ;;
+            -b|--bench)
+                run_bench=1
+                shift
+                if [[ $# -gt 0 && $1 =~ ^[0-9]+$ ]]; then
+                    bench_iterations=$1
+                    shift
+                else
+                    echo "Error: --bench requires a number of iterations"
+                    show_help
+                    exit 1
+                fi
                 ;;
             -g|--groups)
                 run_groups=1
@@ -172,7 +215,7 @@ main() {
     done
 
     # If no options specified, show help
-    if [ $run_kem -eq 0 ] && [ $run_groups -eq 0 ] && [ $run_params -eq 0 ]; then
+    if [ $run_kem -eq 0 ] && [ $run_groups -eq 0 ] && [ $run_params -eq 0 ] && [ $run_bench -eq 0 ]; then
         show_help
         exit 1
     fi
@@ -209,6 +252,16 @@ main() {
         [ $params_status -ne 0 ] && exit_status=1
     fi
 
+    # Run benchmarks if requested
+    if [ $run_bench -eq 1 ]; then
+        echo "==============================================="
+        echo "Starting KEM Benchmarks"
+        echo "==============================================="
+        run_kem_bench $bench_iterations
+        local bench_status=$?
+        [ $bench_status -ne 0 ] && exit_status=1
+    fi
+
     # Print final summary
     echo "==============================================="
     echo "Test Summary:"
@@ -231,6 +284,13 @@ main() {
             echo "EVP PKEY Params Tests: ✅ PASSED"
         else
             echo "EVP PKEY Params Tests: ❌ FAILED"
+        fi
+    fi
+    if [ $run_bench -eq 1 ]; then
+        if [ $bench_status -eq 0 ]; then
+            echo "KEM Benchmarks: ✅ COMPLETED"
+        else
+            echo "KEM Benchmarks: ❌ FAILED"
         fi
     fi
     echo "==============================================="
