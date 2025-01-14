@@ -3,6 +3,7 @@
 #include <openssl/evp.h>
 #include <openssl/provider.h>
 #include <string.h>
+#include <time.h>
 
 #include "oqs/oqs.h"
 #include "test_common.h"
@@ -31,6 +32,18 @@ static OSSL_LIB_CTX *libctx = NULL;
 static char *modulename = NULL;
 static char *configfile = NULL;
 
+static inline double get_time_ms(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
+}
+
+typedef struct {
+    double keygen_time;
+    double encaps_time;
+    double decaps_time;
+} timing_results_t;
+
 static int test_oqs_kems(const char *kemalg_name) {
     EVP_MD_CTX *mdctx = NULL;
     EVP_PKEY_CTX *ctx = NULL;
@@ -39,7 +52,8 @@ static int test_oqs_kems(const char *kemalg_name) {
     unsigned char *secenc = NULL;
     unsigned char *secdec = NULL;
     size_t outlen, seclen;
-
+    double start, end;
+    timing_results_t times = {0};
     int testresult = 1;
 
     if (!alg_is_enabled(kemalg_name)) {
@@ -51,17 +65,23 @@ static int test_oqs_kems(const char *kemalg_name) {
     // provider
     if (OSSL_PROVIDER_available(libctx, "default")) {
         QKD_DEBUG("Generating key pair...\n");
+
+        start= get_time_ms();
         testresult &= (ctx = EVP_PKEY_CTX_new_from_name(libctx, kemalg_name,
                                                         NULL)) != NULL &&
                       EVP_PKEY_keygen_init(ctx) && EVP_PKEY_generate(ctx, &key);
+        end = get_time_ms();
+        times.keygen_time = end - start;
 
         if (!testresult) {
             QKD_DEBUG("Key generation failed\n");
             goto err;
         }
         QKD_DEBUG("Key generation succeeded\n");
+
         EVP_PKEY_CTX_free(ctx);
         ctx = NULL;
+
         // Debug encapsulation setup
         QKD_DEBUG("Setting up encapsulation...\n");
         // Create new context from key
@@ -102,7 +122,10 @@ static int test_oqs_kems(const char *kemalg_name) {
 
         // Debug actual encapsulation/decapsulation
         QKD_DEBUG("Performing encapsulation...\n");
+        start = get_time_ms();
         testresult &= EVP_PKEY_encapsulate(ctx, out, &outlen, secenc, &seclen);
+        end = get_time_ms();
+        times.encaps_time = end - start;
 
         QKD_DEBUG("Encapsulation succeeded\n");
 
@@ -116,8 +139,13 @@ static int test_oqs_kems(const char *kemalg_name) {
         QKD_DEBUG("Decapsulation initialized\n");
 
         // Perform decapsulation
+        start = get_time_ms();
+        testresult = EVP_PKEY_decapsulate(ctx, secdec, &seclen, out, outlen);
+        end = get_time_ms();
+        times.decaps_time = end - start;
+
         QKD_DEBUG("Performing decapsulation...\n");
-        if (!EVP_PKEY_decapsulate(ctx, secdec, &seclen, out, outlen)) {
+        if (!testresult) {
             QKD_DEBUG("Decapsulation failed\n");
             testresult = 0;
             goto err;
@@ -189,6 +217,15 @@ static int test_oqs_kems(const char *kemalg_name) {
                 QKD_DEBUG("\nERROR: Shared secrets match after tampering!\n");
                 testresult = 0;
             }
+        }
+        // Printing timing summary
+            if (testresult) {
+            printf("\nTiming Summary for %s:\n", kemalg_name);
+            printf("  Key Generation:  %.3f ms\n", times.keygen_time);
+            printf("  Encapsulation:   %.3f ms\n", times.encaps_time);
+            printf("  Decapsulation:   %.3f ms\n", times.decaps_time);
+            printf("  Total time:      %.3f ms\n\n", 
+                   times.keygen_time + times.encaps_time + times.decaps_time);
         }
     }
 
