@@ -13,6 +13,7 @@
 #elif defined(ETSI_014_API)
 #include <qkd-etsi-api/etsi014/api.h>
 #endif
+#include "oqs_ctx.h"
 #include "oqs_qkd_ctx.h"
 
 static OSSL_FUNC_kem_newctx_fn oqs_qkd_kem_newctx;
@@ -81,6 +82,14 @@ static void *oqs_qkd_kem_newctx(void *provctx) {
 
     // TODO_QKD: Initialize QKD connection???
 
+    const char *config_file = NULL; // or get from configuration
+    qkdkemctx->oqs_ctx = oqs_init_context(config_file);
+    if (!qkdkemctx->oqs_ctx) {
+        QKD_DEBUG("Failed to initialize OQS context");
+        OPENSSL_free(qkdkemctx);
+        return NULL;
+    }
+
     return qkdkemctx;
 }
 
@@ -94,8 +103,14 @@ static void oqs_qkd_kem_freectx(void *vpkemctx) {
 #endif
         
     }
+    // Free OQS context
+    /*
+    if (qkdkemctx->oqs_ctx) {
+        oqs_free_context(qkdkemctx->oqs_ctx);
+    }
+
     oqsx_key_free(qkdkemctx->kem);
-    OPENSSL_free(qkdkemctx);
+    OPENSSL_free(qkdkemctx);*/
     QKD_DEBUG("oqs_qkd_kem_freectx(): OQS KEM context freed");
 }
 
@@ -294,6 +309,16 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     size_t secretLenPQ = 0, ctLenPQ = 0;
     unsigned char *ctQKD, *ctPQ, *secretQKD, *secretPQ;
 
+    // For OQS provider operations
+    //OQS_CTX *oqs_ctx = NULL;
+    EVP_PKEY_CTX *pqc_ctx = NULL;
+    EVP_PKEY *pqc_key = NULL;
+    // get the algorithm name from the KEM context in the method_name
+    //const char *pqc_alg = oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->method_name;
+    const char *pqc_alg = oqsx_key->tls_name;
+    // print tls_name of the key
+    QKD_DEBUG("TLS name: %s", oqsx_key->tls_name);
+
     QKD_DEBUG("QKD KEM encaps starting");
 
     // Retrieve keyslot indices
@@ -306,6 +331,11 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
         goto err;
     }
 
+    QKD_DEBUG("Key sizes before adjustment:");
+    QKD_DEBUG("  Total pubkeylen: %zu", oqsx_key->pubkeylen);
+    QKD_DEBUG("  Reported KEM length: %zu", 
+              oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key);
+
     ON_ERR_SET_GOTO(idx_pq == -1 || idx_qkd == -1, ret, OQS_ERROR, err);
 
     //ret = oqs_init_qkd_context(oqsx_key, true); // Initialize as initiator
@@ -315,16 +345,6 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     ON_ERR_SET_GOTO(oqsx_key->comp_pubkey == NULL, ret, OQS_ERROR, err);
 
     QKD_DEBUG("ENCAPS: pq index: %d, qkd index: %d", idx_pq, idx_qkd);
-    QKD_DEBUG("DECAPS: BEFORE GETTING QKD KEY");
-        if (oqsx_key && oqsx_key->qkd_ctx) {
-        QKD_DEBUG("ENCAPS QKD URIs:");
-        QKD_DEBUG("Source URI: %s", 
-                  oqsx_key->qkd_ctx->source_uri ? oqsx_key->qkd_ctx->source_uri : "NULL");
-        QKD_DEBUG("Destination URI: %s", 
-                  oqsx_key->qkd_ctx->dest_uri ? oqsx_key->qkd_ctx->dest_uri : "NULL");
-    } else {
-        QKD_DEBUG("QKD context or URIs not available");
-    }
 
     // Initialize QKD context as responder
     ret = oqs_init_qkd_context(oqsx_key, false);
@@ -333,9 +353,61 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     ON_ERR_SET_GOTO(ret != OQS_SUCCESS, ret, OQS_ERROR, err);
 
     // Get PQ sizes
+    /*
     ret = oqs_qs_kem_encaps_keyslot(vpkemctx, NULL, &ctLenPQ, NULL, &secretLenPQ,
                                     idx_pq);
-    ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
+    ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);*/
+    // Get PQC-specific length from the KEM context
+
+    // print the lengths
+    QKD_DEBUG("ENCAPS: PQ ciphertext length: %zu, PQ secret length: %zu",
+              ctLenPQ, secretLenPQ);
+
+    // First create context with algorithm configuration
+    if (!qkdkemctx || !qkdkemctx->oqs_ctx) {
+        QKD_DEBUG("Invalid KEM context or OQS context not initialized");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Load or get PQC public key from oqsx_key first
+    pqc_key = get_pqc_public_key(qkdkemctx->oqs_ctx, oqsx_key, pqc_alg);
+    if (!pqc_key) {
+        QKD_DEBUG("Failed to get PQC public key");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Create context from key
+    pqc_ctx = EVP_PKEY_CTX_new(pqc_key, NULL);
+    if (!pqc_ctx) {
+        QKD_DEBUG("Failed to create new context from PQC key");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Initialize encapsulation
+    if (EVP_PKEY_encapsulate_init(pqc_ctx, NULL) <= 0) {
+        QKD_DEBUG("Failed to initialize PQC encapsulation");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Get lengths first
+    if (EVP_PKEY_encapsulate(pqc_ctx, NULL, &ctLenPQ, NULL, &secretLenPQ) <= 0) {
+        QKD_DEBUG("Failed to get PQC lengths");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Get PQC-specific length from the KEM context
+    const OQS_KEM *kem_ctx = oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem;
+    if (!kem_ctx) {
+        QKD_DEBUG("KEM context is NULL");
+        return OQS_ERROR;
+    }
+    ctLenPQ = kem_ctx->length_ciphertext;
+    secretLenPQ = kem_ctx->length_shared_secret;
 
     // Set total sizes
     *ctlen = ctLenQKD + ctLenPQ;
@@ -364,14 +436,48 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
         goto err;
     }
     QKD_DEBUG("ENCAPS: pq index: %d, qkd index: %d", idx_pq, idx_qkd);
+
+    ctLenPQ = kem_ctx->length_ciphertext;
+    secretLenPQ = kem_ctx->length_shared_secret;
+
+    QKD_DEBUG("ENCAPS: PQ ciphertext length: %zu, PQ secret length: %zu",
+              ctLenPQ, secretLenPQ);
     // Encapsulate QKD key
     ret = oqs_qkd_kem_encaps_keyslot(vpkemctx, ctQKD, &ctLenQKD, secretQKD,
                                      &secretLenQKD, idx_qkd);
     // print ret value
     ON_ERR_SET_GOTO(ret < 0, ret, OQS_ERROR, err);
+
     // Encapsulate PQ key
+    // Load or get PQC public key from oqsx_key
+    // Actually perform encapsulation
+    if (EVP_PKEY_encapsulate(pqc_ctx, ctPQ, &ctLenPQ, secretPQ, &secretLenPQ) <= 0) {
+        QKD_DEBUG("PQC encapsulation failed");
+        ret = OQS_ERROR;
+        goto err;
+    }
+#if !defined(NDEBUG) && defined(DEBUG_QKD)
+    // Print the ciphertext length and content
+    printf("ENCAPS: Ciphertext (%zu bytes): ", *ctlen);  // Dereference ctlen
+    for (size_t i = 0; i < *ctlen; i++) {  // Dereference ctlen in loop condition
+        printf("%02x", ct[i]);
+    }
+    printf("\n");
+
+    // Print the individual components
+    printf("ENCAPS: PQ Ciphertext (%zu bytes): ", ctLenPQ);
+    for (size_t i = 0; i < ctLenPQ; i++) {
+        printf("%02x", ctPQ[i]);
+    }
+    printf("\nENCAPS: QKD Ciphertext (%zu bytes): ", ctLenQKD);
+    for (size_t i = 0; i < ctLenQKD; i++) {
+        printf("%02x", ctQKD[i]);
+    }
+    printf("\n");
+#endif
+    /*
     ret = oqs_qs_kem_encaps_keyslot(vpkemctx, ctPQ, &ctLenPQ, secretPQ,
-                                    &secretLenPQ, idx_pq);
+                                    &secretLenPQ, idx_pq);*/
 
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
     QKD_DEBUG("ENCAPS: ret value: %d", ret);
@@ -391,12 +497,16 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     }
     printf("\n");
 #endif
-    ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);    QKD_DEBUG("After first qs_kem encaps_keyslot call");
 
+    //ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);    QKD_DEBUG("After first qs_kem encaps_keyslot call");
+    QKD_DEBUG("ENCAPS: Ciphertext length: %zu, QKD Ciphertext length: %zu, PQ Ciphertext length: %zu, qs_ctx->length_ciphertext: %zu",
+          *ctlen, ctLenQKD, ctLenPQ, qkdkemctx->kem->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_ciphertext);
     QKD_DEBUG("QKD KEM encaps completed successfully");
-
+    ret = 1; // TODO_QKD: check return
 err:
     QKD_DEBUG("QKD KEM encaps finishing with ret=%d", ret);
+    if (pqc_key) EVP_PKEY_free(pqc_key);
+    if (pqc_ctx) EVP_PKEY_CTX_free(pqc_ctx); //TODO_QKD: we should fre QKD stuff
     return ret;
 }
 
@@ -432,6 +542,34 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
 
     QKD_DEBUG("After firs decaps_keyslot call");
 
+    // Print details of each key component
+    /*
+    for (int i = 0; i < oqsx_key->numkeys; i++) {
+        if (oqsx_key->comp_pubkey && oqsx_key->comp_pubkey[i]) {
+            size_t key_len = (i == 0) ? 
+                oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key : 
+                QKD_KSID_SIZE;
+            
+            printf("DECAPS: Public Key Component %d (%zu bytes): ", i, key_len);
+            unsigned char *key_data = (unsigned char *)oqsx_key->comp_pubkey[i];
+            
+            for (size_t j = 0; j < key_len; j++) {
+                printf("%02x", key_data[j]);
+            }
+            printf("\n");
+        } else {
+            QKD_DEBUG("  Public Key Component %d is NULL", i);
+        }
+    }*/
+
+    // Print received ciphertext details
+    QKD_DEBUG("DECAPS: Received Ciphertext Details:");
+    printf("DECAPS: Ciphertext (%zu bytes): ", ctlen);
+    for (size_t i = 0; i < ctlen; i++) {
+        printf("%02x", ct[i]);
+    }
+    printf("\n");
+
     // Set total sizes
     *secretlen = secretLenQKD + secretLenPQ;
 
@@ -439,8 +577,14 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
         return 1;
     }
 
+    // print the lengths ctlen, ctLenQKD, ctLenPQ and qs_ctx->length_ciphertext
+    QKD_DEBUG("DECAPS: Ciphertext length: %zu, QKD Ciphertext length: %zu, PQ Ciphertext length: %zu, qs_ctx->length_ciphertext: %zu",
+              ctlen, ctLenQKD, ctLenPQ, qs_ctx->length_ciphertext);
+
     ctLenPQ = qs_ctx->length_ciphertext;
     ON_ERR_SET_GOTO(ctlen != (ctLenQKD + ctLenPQ), ret, OQS_ERROR, err);
+
+    QKD_DEBUG("WE ARE HERE");
 
     /* Rule: if the classical algorithm is not FIPS approved
        but the PQ algorithm is: PQ share comes first
@@ -489,12 +633,6 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
     QKD_DEBUG("DECAPS: ret value: %d", ret);
     QKD_DEBUG("DECAPS: pq index: %d, qkd index: %d", idx_pq, idx_qkd);
-
-
-    printf("\nDECAPS: QKD Shared Secret (%zu bytes): ", secretLenQKD);
-    for (size_t i = 0; i < secretLenQKD; i++) {
-        printf("%02x", secretQKD[i]);
-    }
 
     printf("\n");
 #endif

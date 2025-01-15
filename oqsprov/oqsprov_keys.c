@@ -1243,12 +1243,10 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
     ON_ERR_SET_GOTO(idx_qkd < 0, ret, OQS_ERROR, err);
 
     // Check key is valid
-    QKD_DEBUG("Checking key pointer: %p", key);
     ON_ERR_SET_GOTO(!key, ret, OQS_ERROR, err);
 
     // Access QKD context through key structure
     QKD_CTX *qkd_ctx = key->qkd_ctx;
-    QKD_DEBUG("QKD context pointer: %p", qkd_ctx);
     ON_ERR_SET_GOTO(!qkd_ctx, ret, OQS_ERROR, err);
 
     // Only initiator should generate initial key
@@ -1262,10 +1260,6 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
     // Allocate memory for QKD components
     key->comp_pubkey[idx_qkd] = OPENSSL_malloc(QKD_KSID_SIZE);
     key->comp_privkey[idx_qkd] = OPENSSL_secure_malloc(QKD_KEY_SIZE);
-
-    QKD_DEBUG("Pubkey pointer: %p, Privkey pointer: %p",
-              key->comp_pubkey[idx_qkd],
-              key->comp_privkey[idx_qkd]);
 
     if (!key->comp_pubkey[idx_qkd] || !key->comp_privkey[idx_qkd]) {
         QKD_DEBUG("Failed to allocate memory for QKD components");

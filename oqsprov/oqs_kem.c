@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "oqs_prov.h"
+#include "oqs_ctx.h"
 
 #ifdef NDEBUG
 #define OQS_KEM_PRINTF(a)
@@ -57,6 +58,7 @@ static OSSL_FUNC_kem_encapsulate_init_fn oqs_kem_encaps_init;
 typedef struct {
     OSSL_LIB_CTX *libctx;
     OQSX_KEY *kem;
+    OQS_CTX *oqs_ctx;
 } PROV_OQSKEM_CTX;
 
 /// Common KEM functions
@@ -87,7 +89,7 @@ static int oqs_kem_decaps_init(void *vpkemctx, void *vkem,
 }
 
 /// Quantum-Safe KEM functions (OQS)
-
+/*
 static int oqs_qs_kem_encaps_keyslot(void *vpkemctx, unsigned char *out,
                                      size_t *outlen, unsigned char *secret,
                                      size_t *secretlen, int keyslot) {
@@ -139,7 +141,7 @@ static int oqs_qs_kem_encaps_keyslot(void *vpkemctx, unsigned char *out,
     return OQS_SUCCESS == OQS_KEM_encaps(kem_ctx, out, secret,
                                          pkemctx->kem->comp_pubkey[keyslot]);
 }
-
+*/
 static int oqs_qs_kem_decaps_keyslot(void *vpkemctx, unsigned char *out,
                                      size_t *outlen, const unsigned char *in,
                                      size_t inlen, int keyslot) {

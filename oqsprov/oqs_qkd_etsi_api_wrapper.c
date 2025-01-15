@@ -122,8 +122,6 @@ static unsigned char *base64_decode(const char *in, size_t *outlen) {
 
 bool qkd_get_status(QKD_CTX *ctx) {
 
-    QKD_DEBUG("ETSI014: Requesting status from KME");
-
     if (!ctx) {
         QKD_DEBUG("ETSI014: Invalid ctx");
         return false;
@@ -137,13 +135,11 @@ bool qkd_get_status(QKD_CTX *ctx) {
     if (!ctx->status.source_KME_ID) {
         QKD_DEBUG("ETSI014: No source KME ID set");
     }
-
-    QKD_DEBUG("ETSI014: Requesting status from KME");
     
     //qkd_status_t status_resp;
     //memset(&status_resp, 0, sizeof(status_resp));
-    QKD_DEBUG("ETSI014: Requesting status from KME with source=%s, dest=%s", 
-              ctx->source_uri, ctx->dest_uri);
+    //QKD_DEBUG("ETSI014: Requesting status from KME with source=%s, dest=%s", 
+    //          ctx->source_uri, ctx->dest_uri);
     uint32_t ret = GET_STATUS(ctx->source_uri, ctx->dest_uri, &ctx->status);
 
     QKD_DEBUG("ETSI014: GET_STATUS returned %u", ret);

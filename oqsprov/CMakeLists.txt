@@ -12,12 +12,12 @@ set(PROVIDER_SOURCE_FILES
   oqsprov.c oqsprov_capabilities.c oqsprov_keys.c
   oqs_kmgmt.c oqs_kem.c
   oqs_encode_key2any.c oqs_endecoder_common.c oqs_decode_der2key.c oqsprov_bio.c
-  oqs_qkd_ctx.c
+  oqs_ctx.c oqs_qkd_ctx.c
   oqs_qkd_etsi_api_wrapper.c
   oqsprov.def
 )
 set(PROVIDER_HEADER_FILES
-  oqs_prov.h oqs_qkd_kem.h oqs_qkd_ctx.h oqs_qkd_etsi_api_wrapper.h oqs_endecoder_local.h
+  oqs_prov.h oqs_qkd_kem.h oqs_ctx.h oqs_qkd_ctx.h oqs_qkd_etsi_api_wrapper.h oqs_endecoder_local.h
 )
 
 set(OQS_LIBRARY_TYPE MODULE)
