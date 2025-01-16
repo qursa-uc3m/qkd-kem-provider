@@ -2,6 +2,7 @@
 
 # Default installation directory
 OQS_DIR="/opt/oqs_openssl3"
+PROVIDERS_DIR="/usr/local/lib/ossl-modules"
 
 # Allow custom directory via command line argument
 if [ "$1" != "" ]; then
@@ -17,8 +18,8 @@ PROJECT_DIR="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
 
 
 # Export environment variables
-export OPENSSL_CONF="${OQS_DIR}/oqs-provider/scripts/openssl-ca.cnf"
-export OPENSSL_MODULES="${PROJECT_DIR}/_build/lib"
+#export OPENSSL_CONF="${PROJECT_DIR}/config/openssl.cnf"
+export OPENSSL_MODULES="$PROVIDERS_DIR"
 export PATH="${OQS_DIR}/.local/bin:$PATH"
 export LD_LIBRARY_PATH="${OQS_DIR}/.local/lib64:$LD_LIBRARY_PATH"
 

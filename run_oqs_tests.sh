@@ -20,7 +20,8 @@ show_help() {
 # Set up environment variables
 setup_environment() {
     export OPENSSL_APP=openssl
-    export OPENSSL_MODULES="${BASE_DIR}/_build/lib"
+    #export OPENSSL_MODULES="${BASE_DIR}/_build/lib"
+    export OPENSSL_MODULES="/usr/local/lib/ossl-modules"
     export OPENSSL_CONF="${BASE_DIR}/test/openssl-ca.cnf"
 
     # Set up library paths

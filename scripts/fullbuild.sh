@@ -12,6 +12,8 @@
 # EnvVar OPENSSL_BRANCH: Defines branch/release of openssl; if set, forces source-build of OpenSSL3
 # EnvVar liboqs_DIR: If set, needs to point to a directory where liboqs has been installed to
 
+PROVIDERS_DIR="/usr/local/lib/ossl-modules/"
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
    SHLIBEXT="dylib"
    STATLIBEXT="dylib"
@@ -142,3 +144,8 @@ if [ ! -f "_build/lib/qkdkemprovider.$SHLIBEXT" ]; then
    fi
 fi
 
+# Copy provider to modules directory
+echo "Copying qkdkemprovider to $PROVIDERS_DIR..."
+sudo mkdir -p "$PROVIDERS_DIR"
+sudo cp "_build/lib/qkdkemprovider.$SHLIBEXT" "$PROVIDERS_DIR/"
+echo "Provider copied to $PROVIDERS_DIR"
