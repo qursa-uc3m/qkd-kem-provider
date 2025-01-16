@@ -5,42 +5,10 @@ import matplotlib.colors as mcolors
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 import os
 
-# Dictionary mapping families to their algorithms
-KEM_FAMILIES = {
-    'kyber': ['qkd_kyber512', 'qkd_kyber768', 'qkd_kyber1024'],
-    'mlkem': ['qkd_mlkem512', 'qkd_mlkem768', 'qkd_mlkem1024'],
-    'bike': ['qkd_bikel1', 'qkd_bikel3', 'qkd_bikel5'],
-    'frodo': ['qkd_frodo640aes', 'qkd_frodo640shake', 
-              'qkd_frodo976aes', 'qkd_frodo976shake',
-              'qkd_frodo1344aes', 'qkd_frodo1344shake'],
-    'hqc': ['qkd_hqc128', 'qkd_hqc192', 'qkd_hqc256']
-}
+from config import (KEM_FAMILIES, KEM_COMPARISON, 
+                    FONT_SIZES, AXES_STYLE)
 
-# Dictionary mapping standard KEMs to their QKD variants
-KEM_COMPARISON = {
-    'kyber': {
-        'standard': ['kyber512', 'kyber768', 'kyber1024'],
-        'qkd': ['qkd_kyber512', 'qkd_kyber768', 'qkd_kyber1024']
-    },
-    'mlkem': {
-        'standard': ['mlkem512', 'mlkem768', 'mlkem1024'],
-        'qkd': ['qkd_mlkem512', 'qkd_mlkem768', 'qkd_mlkem1024']
-    },
-    'bike': {
-        'standard': ['bikel1', 'bikel3', 'bikel5'],
-        'qkd': ['qkd_bikel1', 'qkd_bikel3', 'qkd_bikel5']
-    },
-    'frodo': {
-        'standard': ['frodo640aes', 'frodo640shake', 'frodo976aes', 
-                    'frodo976shake', 'frodo1344aes', 'frodo1344shake'],
-        'qkd': ['qkd_frodo640aes', 'qkd_frodo640shake', 'qkd_frodo976aes', 
-                'qkd_frodo976shake', 'qkd_frodo1344aes', 'qkd_frodo1344shake']
-    },
-    'hqc': {
-        'standard': ['hqc128', 'hqc192', 'hqc256'],
-        'qkd': ['qkd_hqc128', 'qkd_hqc192', 'qkd_hqc256']
-    }
-}
+# -- -- DATA PROCESSING -- -- #
 
 def kem_data_process(csv_path):
     """
@@ -181,6 +149,57 @@ def generate_comparison_stats(df):
     
     return summary_stats
 
+# -- -- DATA PLOTTING -- -- #
+
+def apply_axes_style(ax, xlabel=None, ylabel=None, title=None):
+    """
+    Applies consistent styling to plot axes.
+    
+    Args:
+        ax: matplotlib axes object
+        xlabel: x-axis label (optional)
+        ylabel: y-axis label (optional)
+        title: plot title (optional)
+    """
+    # Set labels and title if provided
+    if xlabel:
+        ax.set_xlabel(r'\textbf{' + xlabel + '}', 
+                     fontsize=FONT_SIZES['axes_label'], 
+                     labelpad=AXES_STYLE['label_pad'])
+    if ylabel:
+        ax.set_ylabel(r'\textbf{' + ylabel + '}', 
+                     fontsize=FONT_SIZES['axes_label'], 
+                     labelpad=AXES_STYLE['label_pad'])
+    if title:
+        ax.set_title(title, 
+                    fontsize=FONT_SIZES['axes_title'], 
+                    pad=20)
+
+    # Configure grid
+    ax.grid(AXES_STYLE['grid'], 
+            alpha=AXES_STYLE['grid_alpha'], 
+            zorder=0)
+    ax.grid(which='minor', 
+            color=AXES_STYLE['grid_color'],
+            linestyle=AXES_STYLE['grid_linestyle'], 
+            linewidth=AXES_STYLE['grid_linewidth'], 
+            alpha=0.3)
+
+    # Configure ticks
+    ax.tick_params(axis='both', 
+                  which='major',
+                  length=AXES_STYLE['major_tick_length'],
+                  width=AXES_STYLE['major_tick_width'],
+                  labelsize=FONT_SIZES['tick_label'])
+    ax.tick_params(axis='both', 
+                  which='minor',
+                  length=AXES_STYLE['minor_tick_length'],
+                  width=AXES_STYLE['minor_tick_width'])
+
+    # Add minor ticks
+    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    if not ax.get_xscale() == 'log':
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
 
 def plot_kem_times(input_df, error_suffix="_std", plot_title="kem_times.png", y_start=None):
     """
@@ -192,11 +211,8 @@ def plot_kem_times(input_df, error_suffix="_std", plot_title="kem_times.png", y_
         plot_title: Output filename for the plot
         y_start: Starting point for y-axis (optional)
     """
-    fontsize_1 = 20
-    fontsize_2 = 24
     
     # Sort algorithms by total time
-    #input_df['TotalTime_mean'] = input_df['KeyGen(ms)_mean'] + input_df['Encaps(ms)_mean'] + input_df['Decaps(ms)_mean']
     input_df = input_df.sort_values('TotalTime(ms)_mean')
     
     # Setup plot dimensions
@@ -205,7 +221,6 @@ def plot_kem_times(input_df, error_suffix="_std", plot_title="kem_times.png", y_
     x = np.arange(len(algorithms))  # label locations
     
     # Create color palette for the three operations
-    # colors = ["#9fcf69", "#33acdc", "#ff7f50"]  # green, blue, coral
     colors = list(mcolors.LinearSegmentedColormap.from_list("", ["#9fcf69", "#33acdc"])(np.linspace(0, 1, 3)))
     
     # Create figure and axis
@@ -238,39 +253,37 @@ def plot_kem_times(input_df, error_suffix="_std", plot_title="kem_times.png", y_
         
         bars.append(container)
     
-    # Customize plot
-    ax.set_ylabel(r'\textbf{Time (ms)}', fontsize=fontsize_2)
-    #ax.yaxis.set_label_coords(-0.025, 0.5)
-    ax.set_xlabel(r'\textbf{Algorithm}', fontsize=fontsize_2)
+    # Apply consistent styling
+    apply_axes_style(ax, 
+                    xlabel='Algorithm',
+                    ylabel='Time (ms)')
     
-    # Set x-ticks
-    #ax.set_xticks(x)
-    #ax.set_xticklabels(algorithms, rotation=45, horizontalalignment='right')
-    #ax.tick_params(axis='both', labelsize=fontsize_1)
-    
-    # Set x-ticks
+    # Set x-ticks with LaTeX formatting for underscores
     ax.set_xticks(x)
     ax.set_xticklabels([alg.replace('_', '\_') for alg in algorithms], 
-                       rotation=45, horizontalalignment='right')
+                       rotation=45, 
+                       horizontalalignment='right',
+                       fontsize=FONT_SIZES['tick_label'])
     
-    # Customize tick parameters
-    ax.tick_params(axis='both', which='major', length=8, width=2, labelsize=fontsize_1)
-    ax.tick_params(axis='y', which='minor', length=4, width=1)
-    
-    #ax.yaxis.set_minor_locator(AutoMinorLocator())
-    #ax.xaxis.set_minor_locator(AutoMinorLocator())
     # Set major and minor tick locators
-    ax.yaxis.set_major_locator(MultipleLocator(2))  # Major ticks every 2 units
-    ax.yaxis.set_minor_locator(AutoMinorLocator()) # Minor ticks between majors
+    # # ax.yaxis.set_major_locator(MultipleLocator())  # Major ticks every 2 units
+    ax.yaxis.set_minor_locator(AutoMinorLocator())  # Minor ticks between majors
     
-    # Add grid
-    ax.grid(True, zorder=0, alpha=0.5)
-    ax.grid(which='minor', color='black', linestyle=':', linewidth=0.5, alpha=0.3)
+    # Add grid with custom styling
+    ax.grid(True, which='major', 
+            alpha=AXES_STYLE['grid_alpha'], 
+            zorder=0, 
+            linewidth=AXES_STYLE['grid_linewidth'])
+    ax.grid(True, which='minor', 
+            color=AXES_STYLE['grid_color'],
+            linestyle=AXES_STYLE['grid_linestyle'], 
+            linewidth=AXES_STYLE['grid_linewidth'], 
+            alpha=0.3)
     
     # Add legend
-    ax.legend(loc='upper left', #bbox_to_anchor=(0.5, 1.15), 
-             #nrow=3, 
-             frameon=False, fontsize=fontsize_1)
+    ax.legend(loc='upper left',
+             frameon=True, 
+             fontsize=FONT_SIZES['legend'])
     
     # Set y-axis limits if specified
     if y_start is not None:
@@ -297,9 +310,6 @@ def plot_kem_total_times(input_df, error_suffix="_std", plot_title="kem_total_ti
         y_start: Starting point for y-axis (optional)
     """
     
-    fontsize_1 = 20  # For ticks and legend
-    fontsize_2 = 24  # For axis labels
-    
     # Calculate total times and errors
     input_df['TotalTime_mean'] = (input_df['KeyGen(ms)_mean'] + 
                                  input_df['Encaps(ms)_mean'] + 
@@ -317,6 +327,11 @@ def plot_kem_total_times(input_df, error_suffix="_std", plot_title="kem_total_ti
     # Create plot
     fig, ax = plt.subplots(figsize=(20, 10))
     
+    # Setup plot dimensions
+    
+    algorithms = input_df.index.tolist()  # algorithms are in the index
+    x = np.arange(len(algorithms))  # label locations
+    
     x = np.arange(len(input_df.index))
     container = ax.bar(x, input_df['TotalTime_mean'],
                       yerr=input_df['TotalTime_std'],
@@ -327,20 +342,32 @@ def plot_kem_total_times(input_df, error_suffix="_std", plot_title="kem_total_ti
                       error_kw={'ecolor': 'black'},
                       zorder=3)
     
-    # Set axis labels
-    ax.set_ylabel(r'\textbf{Time (ms)}', fontsize=fontsize_2)
-    #ax.yaxis.set_label_coords(-0.025, 0.5)
-    ax.set_xlabel(r'\textbf{Algorithm}', fontsize=fontsize_2)
+    # Apply consistent styling
+    apply_axes_style(ax, 
+                    xlabel='Algorithm',
+                    ylabel='Time (ms)')
     
+    # Set x-ticks with LaTeX formatting for underscores
     ax.set_xticks(x)
-    ax.set_xticklabels(input_df.index, rotation=45, ha='right')
-    ax.tick_params(axis='both', labelsize=20)
+    ax.set_xticklabels([alg.replace('_', '\_') for alg in algorithms], 
+                       rotation=45, 
+                       horizontalalignment='right',
+                       fontsize=FONT_SIZES['tick_label'])
     
-    # Add grid
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
-    ax.xaxis.set_minor_locator(AutoMinorLocator())
-    ax.grid(True, zorder=0, alpha=0.5)
-    ax.grid(which='minor', color='black', linestyle=':', linewidth=0.5, alpha=0.3)
+    # Set major and minor tick locators
+    # ax.yaxis.set_major_locator(MultipleLocator())  # Major ticks every 2 units
+    ax.yaxis.set_minor_locator(AutoMinorLocator())  # Minor ticks between majors
+    
+    # Add grid with custom styling
+    ax.grid(True, which='major', 
+            alpha=AXES_STYLE['grid_alpha'], 
+            zorder=0, 
+            linewidth=AXES_STYLE['grid_linewidth'])
+    ax.grid(True, which='minor', 
+            color=AXES_STYLE['grid_color'],
+            linestyle=AXES_STYLE['grid_linestyle'], 
+            linewidth=AXES_STYLE['grid_linewidth'], 
+            alpha=0.3)
     
     if y_start is not None:
         ax.set_ylim(y_start, None)
@@ -350,10 +377,12 @@ def plot_kem_total_times(input_df, error_suffix="_std", plot_title="kem_total_ti
     if not os.path.exists("./plots"):
         os.makedirs("./plots")
     
-    plt.savefig(os.path.join(".", "plots", plot_title), bbox_inches='tight', dpi=300)
+    plt.savefig(os.path.join(".", "plots", plot_title), 
+                bbox_inches='tight', 
+                dpi=300)
     plt.show()
 
-def plot_kems_fast(input_df, error_suffix="_std", plot_title="fast_kems.png", log_scale=False):
+def plot_kems_fast(input_df, error_suffix="_std", plot_title="fast_kems.png", y_start=None):
     """
     Plots KEM timing measurements for fast algorithms (up to qkd_frodo976aes).
     
@@ -363,9 +392,6 @@ def plot_kems_fast(input_df, error_suffix="_std", plot_title="fast_kems.png", lo
         plot_title: Output filename for the plot
         log_scale: Boolean to enable log scale on y-axis (default: False)
     """
-    
-    fontsize_1 = 20  # For ticks and legend
-    fontsize_2 = 24  # For axis labels
     
     # Filter and sort algorithms
     cutoff_alg = 'qkd_frodo976aes'
@@ -410,34 +436,41 @@ def plot_kems_fast(input_df, error_suffix="_std", plot_title="fast_kems.png", lo
         
         bars.append(container)
     
-    # Set axis labels
-    ax.set_ylabel(r'\textbf{Time (ms)}', fontsize=fontsize_2)
-    #ax.yaxis.set_label_coords(-0.025, 0.5)
-    ax.set_xlabel(r'\textbf{Algorithm}', fontsize=fontsize_2)
+    # Apply consistent styling
+    apply_axes_style(ax, 
+                    xlabel='Algorithm',
+                    ylabel='Time (ms)')
     
-    # Set x-ticks
+    # Set x-ticks with LaTeX formatting for underscores
     ax.set_xticks(x)
     ax.set_xticklabels([alg.replace('_', '\_') for alg in algorithms], 
-                       rotation=45, horizontalalignment='right')
+                       rotation=45, 
+                       horizontalalignment='right',
+                       fontsize=FONT_SIZES['tick_label'])
     
-    # Customize tick parameters
-    ax.tick_params(axis='both', which='major', length=8, width=2, labelsize=fontsize_1)
-    ax.tick_params(axis='y', which='minor', length=4, width=1)
+    # Set major and minor tick locators
+    # ax.yaxis.set_major_locator(MultipleLocator())  # Major ticks every 2 units
+    ax.yaxis.set_minor_locator(AutoMinorLocator())  # Minor ticks between majors
     
-    # Set y-axis scale and grid
-    if log_scale:
-        ax.set_yscale('log')
-        ax.set_ylabel(r'$\log_{10}(\mathrm{Time}/\mathrm{ms})$', fontsize=fontsize_2)
-    else:
-        ax.yaxis.set_major_locator(MultipleLocator(0.2))  # Major ticks every 0.2 units
-        ax.yaxis.set_minor_locator(AutoMinorLocator(2))   # Minor ticks between majors
+    # Add grid with custom styling
+    ax.grid(True, which='major', 
+            alpha=AXES_STYLE['grid_alpha'], 
+            zorder=0, 
+            linewidth=AXES_STYLE['grid_linewidth'])
+    ax.grid(True, which='minor', 
+            color=AXES_STYLE['grid_color'],
+            linestyle=AXES_STYLE['grid_linestyle'], 
+            linewidth=AXES_STYLE['grid_linewidth'], 
+            alpha=0.3)
     
-    # Add grid
-    ax.grid(True, which='major', zorder=0, alpha=0.5, linewidth=1.2)
-    ax.grid(True, which='minor', color='black', linestyle=':', linewidth=0.8, alpha=0.3)
+    # Add legend with consistent styling
+    ax.legend(loc='upper left',
+             frameon=True, 
+             fontsize=FONT_SIZES['legend'])
     
-    # Add legend
-    ax.legend(loc='upper left', ncol=3, frameon=False, fontsize=fontsize_1)
+    # Set y-axis limits if specified
+    if y_start is not None:
+        ax.set_ylim(bottom=y_start)
     
     plt.tight_layout()
     
@@ -464,9 +497,6 @@ def plot_kem_family(input_df, family, error_suffix="_std", plot_title=None, log_
     if family not in KEM_FAMILIES:
         raise ValueError(f"Unknown family '{family}'. Available families: {list(KEM_FAMILIES.keys())}")
     
-    fontsize_1 = 20  # For ticks and legend
-    fontsize_2 = 24  # For axis labels
-    
     # Filter algorithms for the selected family
     family_algs = KEM_FAMILIES[family]
     family_df = input_df.loc[family_algs].sort_values('TotalTime_mean')
@@ -477,7 +507,7 @@ def plot_kem_family(input_df, family, error_suffix="_std", plot_title=None, log_
     x = np.arange(len(algorithms))
     
     # Create figure
-    fig, ax = plt.subplots(figsize=(15, 8))
+    fig, ax = plt.subplots(figsize=(20, 10))
     
     # Define colors and operations
     colors = list(mcolors.LinearSegmentedColormap.from_list("", ["#9fcf69", "#33acdc"])(np.linspace(0, 1, 3)))
@@ -505,43 +535,48 @@ def plot_kem_family(input_df, family, error_suffix="_std", plot_title=None, log_
             line.set_linestyle('dashed')
             line.set_linewidth(0.75)
     
-    # Set axis labels
-    if log_scale:
-        ax.set_yscale('log')
-        ax.set_ylabel(r'$\log_{10}(\mathrm{Time}/\mathrm{ms})$', fontsize=fontsize_2)
-    else:
-        ax.set_ylabel(r'\textbf{Time (ms)}', fontsize=fontsize_2)
-    #ax.yaxis.set_label_coords(-0.025, 0.5)
-    ax.set_xlabel(r'\textbf{Algorithm}', fontsize=fontsize_2)
+    # Apply consistent styling
+    apply_axes_style(ax, 
+                    xlabel='Algorithm',
+                    ylabel='Time (ms)')
     
-    # Set x-ticks
+    # Set x-ticks with LaTeX formatting for underscores
     ax.set_xticks(x)
     ax.set_xticklabels([alg.replace('_', '\_') for alg in algorithms], 
-                       rotation=45, horizontalalignment='right')
+                       rotation=45, 
+                       horizontalalignment='right',
+                       fontsize=FONT_SIZES['tick_label'])
     
-    # Customize tick parameters
-    ax.tick_params(axis='both', which='major', length=8, width=2, labelsize=fontsize_1)
-    ax.tick_params(axis='y', which='minor', length=4, width=1)
+    # Set major and minor tick locators
+    # ax.yaxis.set_major_locator(MultipleLocator())  # Major ticks every 2 units
+    ax.yaxis.set_minor_locator(AutoMinorLocator())  # Minor ticks between majors
     
-    # Set y-axis grid and ticks
-    if log_scale:
-        ax.set_yscale('log')
-        ax.grid(True, which='major', zorder=0, alpha=0.5, linewidth=1.2)
-        ax.grid(True, which='minor', color='black', linestyle=':', linewidth=0.8, alpha=0.3)
-    else:
-        # Let matplotlib handle the major ticks automatically
-        ax.yaxis.set_minor_locator(AutoMinorLocator())
-        ax.grid(True, which='major', zorder=0, alpha=0.5, linewidth=1.2)
-        ax.grid(True, which='minor', color='black', linestyle=':', linewidth=0.8, alpha=0.3)
-        
+    # Add grid with custom styling
+    ax.grid(True, which='major', 
+            alpha=AXES_STYLE['grid_alpha'], 
+            zorder=0, 
+            linewidth=AXES_STYLE['grid_linewidth'])
+    ax.grid(True, which='minor', 
+            color=AXES_STYLE['grid_color'],
+            linestyle=AXES_STYLE['grid_linestyle'], 
+            linewidth=AXES_STYLE['grid_linewidth'], 
+            alpha=0.3)
+    
     # Ensure some padding above the highest bar
     ax.margins(y=0.1)
     
-    # Add legend
-    ax.legend(loc='upper left', ncol=3, frameon=False, fontsize=fontsize_1)
+    # Add legend below the title
+    handles, labels = ax.get_legend_handles_labels()
+    if labels:
+        # Place legend below the plot title in a single row
+        ax.legend(frameon=False, 
+                 fontsize=FONT_SIZES['legend'],
+                 loc='upper center',
+                 bbox_to_anchor=(0.5, 1.01),
+                 ncol=len(labels))
     
     # Set title
-    ax.set_title(f'{family.upper()} Family', fontsize=fontsize_2, pad=20)
+    ax.set_title(f'{family.upper()} Family', fontsize=FONT_SIZES['fig_title'], pad=20)
     
     plt.tight_layout()
     
@@ -552,7 +587,9 @@ def plot_kem_family(input_df, family, error_suffix="_std", plot_title=None, log_
     if plot_title is None:
         plot_title = f"{family}_kems.pdf"
     
-    plt.savefig(os.path.join(".", "plots", plot_title), bbox_inches='tight', dpi=300)
+    plt.savefig(os.path.join(".", "plots", plot_title), 
+                bbox_inches='tight', 
+                dpi=300)
     plt.show()
     
 def plot_ops_percent(input_df, family=None, plot_title="operation_percentages.png"):
@@ -585,6 +622,10 @@ def plot_ops_percent(input_df, family=None, plot_title="operation_percentages.pn
     # Setup plot dimensions
     fig, ax = plt.subplots(figsize=(20, 10))
     
+    # Setup plot dimensions
+    algorithms = input_df.index.tolist()  # algorithms are in the index
+    x = np.arange(len(algorithms))  # label locations
+    
     # Get x-axis positions
     x = np.arange(len(percentages.index))
     
@@ -603,11 +644,6 @@ def plot_ops_percent(input_df, family=None, plot_title="operation_percentages.pn
                          color=color, edgecolor='black', linewidth=1))
         bottom += percentages[col]
     
-    # Customize plot
-    ax.set_ylabel(r'\textbf{Percentage of Total Time (\%)}', fontsize=24)
-    #ax.yaxis.set_label_coords(-0.025, 0.5)
-    ax.set_xlabel(r'\textbf{Algorithm}', fontsize=24)
-    
     # Add percentage labels on the bars
     for bars_group in bars:
         for bar in bars_group:
@@ -619,30 +655,48 @@ def plot_ops_percent(input_df, family=None, plot_title="operation_percentages.pn
                        ha='center', va='center', rotation=0,
                        fontsize=14)
     
-    # Set x-ticks
+    # Apply consistent styling
+    apply_axes_style(ax, 
+                    xlabel=r'Algorithm',
+                    ylabel=r'Percentage of Total Time (\%)')
+    
+    # Set x-ticks with LaTeX formatting for underscores
     ax.set_xticks(x)
-    ax.set_xticklabels([alg.replace('_', '\_') for alg in percentages.index], 
-                       rotation=45, horizontalalignment='right', fontsize=16)
+    ax.set_xticklabels([alg.replace('_', '\_') for alg in algorithms], 
+                       rotation=45, 
+                       horizontalalignment='right',
+                       fontsize=FONT_SIZES['tick_label'])
     
-    # Customize tick parameters and grid
-    ax.tick_params(axis='both', which='major', length=8, width=2, labelsize=16)
-    ax.tick_params(axis='y', which='minor', length=4, width=1)
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
-    
-    # Lighter grid
-    ax.grid(True, which='major', axis='y', zorder=0, alpha=0.3, linewidth=1.2)
-    ax.grid(True, which='minor', axis='y', color='black', linestyle=':', linewidth=0.8, alpha=0.2)
-    
-    # Set y-axis limits
     ax.set_ylim(0, 100)
+    ax.set_xlim(-0.5, len(algorithms) - 0.5)
     
-    # Add legend
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-             ncol=3, frameon=False, fontsize=20)
+    # Set major and minor tick locators
+    ax.yaxis.set_major_locator(MultipleLocator(10))  # Major ticks every 2 units
+    ax.yaxis.set_minor_locator(AutoMinorLocator())  # Minor ticks between majors
+    
+    # Add grid with custom styling
+    ax.grid(True, which='major', 
+            alpha=AXES_STYLE['grid_alpha'], 
+            zorder=0, 
+            linewidth=AXES_STYLE['grid_linewidth'])
+    ax.grid(True, which='minor', 
+            color=AXES_STYLE['grid_color'],
+            linestyle=AXES_STYLE['grid_linestyle'], 
+            linewidth=AXES_STYLE['grid_linewidth'], 
+            alpha=0.3)
+    
+    # Add legend below the title
+    handles, labels = ax.get_legend_handles_labels()
+    if labels:
+        ax.legend(frameon=False, 
+                fontsize=FONT_SIZES['legend'],
+                loc='upper center',
+                bbox_to_anchor=(0.5, 1.1),
+                ncol=len(labels))
     
     # Add title if showing a specific family
     if family is not None:
-        ax.set_title(f'{family.upper()} Family', fontsize=24, pad=20)
+        ax.set_title(f'{family.upper()} Family', fontsize=FONT_SIZES['fig_title'], pad=20)
     
     # Add family separators when plotting all algorithms
     if family is None:
@@ -659,7 +713,9 @@ def plot_ops_percent(input_df, family=None, plot_title="operation_percentages.pn
     if not os.path.exists("./plots"):
         os.makedirs("./plots")
     
-    plt.savefig(os.path.join(".", "plots", plot_title), bbox_inches='tight', dpi=300)
+    plt.savefig(os.path.join(".", "plots", plot_title), 
+                bbox_inches='tight', 
+                dpi=300)
     plt.show()
 
     # Print numerical percentages
@@ -693,6 +749,17 @@ def plot_kem_comparison(comparison_stats, family=None, operation='TotalTime',
     colors = list(mcolors.LinearSegmentedColormap.from_list("", 
         ["#9fcf69", "#33acdc", "#ff7f50"])(np.linspace(0, 1, 3)))
     colors = [mcolors.to_rgba(c, alpha=0.85) for c in colors]
+    
+    # Configure axes style
+    ax.grid(AXES_STYLE['grid'], alpha=AXES_STYLE['grid_alpha'],
+            linestyle=AXES_STYLE['grid_linestyle'],
+            linewidth=AXES_STYLE['grid_linewidth'],
+            color=AXES_STYLE['grid_color'])
+    
+    ax.tick_params(which='major', length=AXES_STYLE['major_tick_length'],
+                  width=AXES_STYLE['major_tick_width'])
+    ax.tick_params(which='minor', length=AXES_STYLE['minor_tick_length'],
+                  width=AXES_STYLE['minor_tick_width'])
     
     if operation == 'all':
         # Plot all operations
@@ -729,7 +796,8 @@ def plot_kem_comparison(comparison_stats, family=None, operation='TotalTime',
                     if current_x == 0:  # Only add labels for first algorithm
                         op_label = op.split('(')[0]
                         ax.text(current_x + x_offset + width/2, ax.get_ylim()[1],
-                               op_label, ha='center', va='bottom', fontsize=14)
+                               op_label, ha='center', va='bottom', 
+                               fontsize=FONT_SIZES['annotation'])
                 
                 x_positions.append(current_x + 3*width)
                 x_labels.append(std_alg.replace('_', '\_'))
@@ -740,25 +808,14 @@ def plot_kem_comparison(comparison_stats, family=None, operation='TotalTime',
                 ax.axvline(x=current_x - 3*width, color='black', 
                           linestyle='--', alpha=0.3, linewidth=1)
                 current_x += 2*width
-                
-            # Add separator between families if plotting all
-            if not family and fam != list(families_to_plot)[-1]:
-                ax.axvline(x=current_x - 3*width, color='black', 
-                          linestyle='--', alpha=0.3, linewidth=1)
-                current_x += 2*width
-            
-            # Add separator between families if plotting all
-            if not family and fam != list(families_to_plot)[-1]:
-                ax.axvline(x=current_x - 0.1, color='black', 
-                          linestyle='--', alpha=0.3, linewidth=1)
-                current_x += 0.4
         
         # Set x-ticks
         ax.set_xticks(x_positions)
-        ax.set_xticklabels(x_labels, rotation=45, ha='right', fontsize=16)
+        ax.set_xticklabels(x_labels, rotation=45, ha='right', 
+                          fontsize=FONT_SIZES['tick_label'])
         
     else:
-        # Plot single operation (original code)
+        # Plot single operation
         std_data = []
         qkd_data = []
         labels = []
@@ -782,7 +839,8 @@ def plot_kem_comparison(comparison_stats, family=None, operation='TotalTime',
             
             # Add percentage labels
             for i, v in enumerate(overhead_data):
-                ax.text(i, v, f'{v:.1f}\%', ha='center', va='bottom', fontsize=14)
+                ax.text(i, v, f'{v:.1f}\%', ha='center', va='bottom', 
+                       fontsize=FONT_SIZES['annotation'])
         else:
             ax.bar(x - width/2, std_data, width, label='Standard',
                    color=colors[0], edgecolor='black', linewidth=1)
@@ -791,29 +849,29 @@ def plot_kem_comparison(comparison_stats, family=None, operation='TotalTime',
             
         ax.set_xticks(x)
         ax.set_xticklabels([label.replace('_', '\_') for label in labels],
-                          rotation=45, ha='right', fontsize=16)
+                          rotation=45, ha='right', fontsize=FONT_SIZES['tick_label'])
     
     # Set labels and grid
     if overhead:
-        ax.set_ylabel(r'\textbf{Overhead (\%)}', fontsize=24)
+        ax.set_ylabel(r'\textbf{Overhead (\%)}', fontsize=FONT_SIZES['axes_label'],
+                     labelpad=AXES_STYLE['label_pad'])
     else:
-        ax.set_ylabel(r'\textbf{Time (ms)}', fontsize=24)
-    ax.set_xlabel(r'\textbf{Algorithm}', fontsize=24)
+        ax.set_ylabel(r'\textbf{Time (ms)}', fontsize=FONT_SIZES['axes_label'],
+                     labelpad=AXES_STYLE['label_pad'])
+    ax.set_xlabel(r'\textbf{Algorithm}', fontsize=FONT_SIZES['axes_label'],
+                 labelpad=AXES_STYLE['label_pad'])
     
-    # Adjust y-axis label position
-    #ax.yaxis.set_label_coords(-0.025, 0.5)
-    
-    # Add grid
-    ax.grid(True, alpha=0.3)
+    ax.yaxis.set_minor_locator(AutoMinorLocator())  # Minor ticks between majors
     
     # Add legend
     handles, labels = ax.get_legend_handles_labels()
     if labels:
-        ax.legend(frameon=False, fontsize=16)
+        ax.legend(frameon=False, fontsize=FONT_SIZES['legend'])
     
     # Add title if showing a specific family
     if family:
-        ax.set_title(f'{family.upper()} Family', fontsize=24, pad=20)
+        ax.set_title(f'{family.upper()} Family', fontsize=FONT_SIZES['axes_title'], 
+                    pad=20)
     
     plt.tight_layout()
     
