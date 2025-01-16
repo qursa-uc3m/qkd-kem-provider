@@ -40,4 +40,6 @@ EVP_PKEY_CTX *oqs_get_pqc_ctx(OQS_CTX *ctx, const char *alg_name);
 // Helper function to get PQC public key from OQSX_KEY
 EVP_PKEY *get_pqc_public_key(OQS_CTX *ctx, OQSX_KEY *key, const char *alg_name);
 
+EVP_PKEY *get_pqc_private_key(OQS_CTX *ctx, OQSX_KEY *key, const char *alg_name);
+
 #endif /* OQS_CTX_H */

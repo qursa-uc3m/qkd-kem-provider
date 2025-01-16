@@ -141,7 +141,7 @@ static int oqs_qs_kem_encaps_keyslot(void *vpkemctx, unsigned char *out,
     return OQS_SUCCESS == OQS_KEM_encaps(kem_ctx, out, secret,
                                          pkemctx->kem->comp_pubkey[keyslot]);
 }
-*/
+
 static int oqs_qs_kem_decaps_keyslot(void *vpkemctx, unsigned char *out,
                                      size_t *outlen, const unsigned char *in,
                                      size_t inlen, int keyslot) {
@@ -200,6 +200,7 @@ static int oqs_qs_kem_decaps_keyslot(void *vpkemctx, unsigned char *out,
     return OQS_SUCCESS == OQS_KEM_decaps(kem_ctx, out, in,
                                          pkemctx->kem->comp_privkey[keyslot]);
 }
+*/
 
 #include "oqs_qkd_kem.c"
 

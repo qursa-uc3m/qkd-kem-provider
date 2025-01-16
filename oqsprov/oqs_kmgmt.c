@@ -26,6 +26,32 @@
 #include <qkd-etsi-api/etsi014/api.h>
 #endif
 
+#define DEBUG_QKD
+
+#ifdef NDEBUG
+#define OQS_KEY_PRINTF(a)
+#define OQS_KEY_PRINTF2(a, b)
+#define OQS_KEY_PRINTF3(a, b, c)
+#define QKD_DEBUG(fmt, ...)
+#else
+#define OQS_KEY_PRINTF(a)                                                      \
+    if (getenv("OQSKEY"))                                                      \
+    printf(a)
+#define OQS_KEY_PRINTF2(a, b)                                                  \
+    if (getenv("OQSKEY"))                                                      \
+    printf(a, b)
+#define OQS_KEY_PRINTF3(a, b, c)                                               \
+    if (getenv("OQSKEY"))                                                      \
+    printf(a, b, c)
+#ifdef DEBUG_QKD
+#define QKD_DEBUG(fmt, ...)                                                    \
+    fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__,         \
+            ##__VA_ARGS__)
+#else
+#define QKD_DEBUG(fmt, ...)
+#endif
+#endif // NDEBUG
+
 // stolen from openssl/crypto/param_build_set.c as
 // ossl_param_build_set_octet_string not public API:
 
@@ -650,6 +676,8 @@ static void *oqsx_gen_init(void *provctx, int selection, char *oqs_name,
     OSSL_LIB_CTX *libctx = PROV_OQS_LIBCTX_OF(provctx);
     struct oqsx_gen_ctx *gctx = NULL;
 
+    QKD_DEBUG("oqsx_gen_init()");
+
     OQS_KM_PRINTF2("OQSKEYMGMT: gen_init called for key %s \n", oqs_name);
 
     if ((gctx = OPENSSL_zalloc(sizeof(*gctx))) != NULL) {
@@ -668,6 +696,8 @@ static void *oqsx_gen_init(void *provctx, int selection, char *oqs_name,
 
 static void *oqsx_genkey(struct oqsx_gen_ctx *gctx) {
     OQSX_KEY *key;
+
+    QKD_DEBUG("oqsx_genkey()");
 
     if (gctx == NULL)
         return NULL;
@@ -692,6 +722,7 @@ static void *oqsx_gen(void *genctx, OSSL_CALLBACK *osslcb, void *cbarg) {
     struct oqsx_gen_ctx *gctx = genctx;
 
     OQS_KM_PRINTF("OQSKEYMGMT: gen called\n");
+    QKD_DEBUG("oqsx_gen()");
 
     return oqsx_genkey(gctx);
 }
@@ -760,6 +791,7 @@ static int oqsx_gen_set_params(void *genctx, const OSSL_PARAM params[]) {
 #define MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(tokalg, tokoqsalg, bit_security)        \
                                                                                \
     static void *qkd_##tokalg##_new_key(void *provctx) {                       \
+        QKD_DEBUG("_new_key()");                                               \
         return oqsx_key_new(PROV_OQS_LIBCTX_OF(provctx), tokoqsalg,            \
                             "" #tokalg "", KEY_TYPE_QKD_HYB_KEM, NULL,         \
                             bit_security, -1, 0);                              \

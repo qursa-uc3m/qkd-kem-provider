@@ -177,3 +177,71 @@ EVP_PKEY *get_pqc_public_key(OQS_CTX *ctx, OQSX_KEY *key, const char *alg_name) 
     QKD_DEBUG("Successfully created PQC public key");
     return pkey;
 }
+
+EVP_PKEY *get_pqc_private_key(OQS_CTX *ctx, OQSX_KEY *key, const char *alg_name) {
+    if (!ctx || !ctx->initialized || !key || !key->comp_privkey) {
+        QKD_DEBUG("Invalid context, key, or private key component");
+        return NULL;
+    }
+
+    int idx_pq = 0;
+    
+    // Debug prints for size information
+    QKD_DEBUG("Key sizes before adjustment:");
+    QKD_DEBUG("  Total privkeylen: %zu", key->privkeylen);
+    QKD_DEBUG("  KEM private key length: %zu", 
+              key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key);
+    QKD_DEBUG("  QKD part size: %d", QKD_KSID_SIZE);
+
+    // Calculate actual PQC key length
+    size_t pqc_key_len = key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key;
+    QKD_DEBUG("Using PQC key length: %zu", pqc_key_len);
+
+    // Handle TLS algorithm name prefix
+    QKD_DEBUG("TLS algorithm name: %s", alg_name);
+    const char *base_alg_name = alg_name;
+    if (strncmp(alg_name, "qkd_", 4) == 0) {
+        base_alg_name = alg_name + 4;
+    }
+    QKD_DEBUG("Base algorithm name: %s", base_alg_name);
+
+    // Create context for key import
+    EVP_PKEY_CTX *kctx = EVP_PKEY_CTX_new_from_name(ctx->lib_ctx,
+                                                    base_alg_name,
+                                                    OQSPROVIDER_PROPERTY_STRING);
+    if (!kctx) {
+        QKD_DEBUG("Failed to create key context");
+        return NULL;
+    }
+
+    // Create parameter list for private key
+    OSSL_PARAM params[] = {
+        // Include both private and public key parameters
+        OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PRIV_KEY,
+                                        key->comp_privkey[idx_pq],
+                                        pqc_key_len),
+        OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PUB_KEY,
+                                        key->comp_pubkey[idx_pq],
+                                        key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key),
+        OSSL_PARAM_construct_end()
+    };
+
+    EVP_PKEY *pkey = NULL;
+    if (EVP_PKEY_fromdata_init(kctx) <= 0) {
+        QKD_DEBUG("Failed to initialize key import");
+        EVP_PKEY_CTX_free(kctx);
+        return NULL;
+    }
+
+    // Import as private key
+    if (EVP_PKEY_fromdata(kctx, &pkey, EVP_PKEY_PRIVATE_KEY, params) <= 0) {
+        QKD_DEBUG("Failed to import private key data");
+        ERR_print_errors_fp(stderr);
+        EVP_PKEY_CTX_free(kctx);
+        return NULL;
+    }
+
+    EVP_PKEY_CTX_free(kctx);
+    QKD_DEBUG("Successfully created PQC private key");
+    return pkey;
+}

@@ -39,8 +39,16 @@
     printf(a, b, c)
 #ifdef DEBUG_QKD
 #define QKD_DEBUG(fmt, ...)                                                    \
-    fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__,         \
-            ##__VA_ARGS__)
+    do {                                                                       \
+        struct timespec ts;                                                    \
+        clock_gettime(CLOCK_REALTIME, &ts);                                   \
+        struct tm *timeinfo = localtime(&ts.tv_sec);                          \
+        char timestamp[40];                                                    \
+        strftime(timestamp, sizeof(timestamp), "%H:%M:%S", timeinfo);         \
+        fprintf(stderr, "QKD DEBUG [%s.%06ld]: %s:%d: " fmt "\n",             \
+                timestamp, ts.tv_nsec / 1000L, __func__, __LINE__,            \
+                ##__VA_ARGS__);                                               \
+    } while(0)
 #else
 #define QKD_DEBUG(fmt, ...)
 #endif
@@ -458,6 +466,8 @@ static OQSX_KEY *oqsx_key_new_from_nid(OSSL_LIB_CTX *libctx, const char *propq,
         ERR_raise(ERR_LIB_USER, OQSPROV_R_WRONG_PARAMETERS);
         return NULL;
     }
+
+    QKD_DEBUG("Generating OQSX key for nid %d\n", nid);
 
     return oqsx_key_new(libctx, get_oqsname(nid), tls_algname, get_keytype(nid),
                         propq, get_secbits(nid), get_oqsalg_idx(nid),
@@ -977,6 +987,7 @@ OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
         OPENSSL_zalloc(sizeof(*ret)); // ensure all component pointers are NULL
     OQSX_EVP_CTX *evp_ctx = NULL;
     int ret2 = 0, i;
+    bool is_server = false;
 
     if (ret == NULL) {
         QKD_DEBUG("Memory allocation failed");
@@ -990,6 +1001,15 @@ OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
     ON_ERR_GOTO(!ret->lock, err);
 #endif
 
+    // Server detection logic
+    unsigned long err = ERR_peek_error();
+    if (ERR_GET_LIB(err) == ERR_LIB_X509) {
+        is_server = 1;
+    }
+
+
+    QKD_DEBUG("Initializing as %s", is_server ? "server" : "client");
+
     if (oqs_name == NULL) {
         OQS_KEY_PRINTF("OQSX_KEY: Fatal error: No OQS key name provided:\n");
         goto err;
@@ -999,6 +1019,22 @@ OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
         OQS_KEY_PRINTF("OQSX_KEY: Fatal error: No TLS key name provided:\n");
         goto err;
     }
+
+    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_from_name(libctx, tls_name, propq);
+    if (ctx) {
+        uint32_t selection = 0;
+        OSSL_PARAM params[] = {
+            OSSL_PARAM_construct_uint32("selection", &selection),
+            OSSL_PARAM_construct_end()
+        };
+        
+        if (EVP_PKEY_CTX_get_params(ctx, params) > 0) {
+            is_server = (selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0;
+        }
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    QKD_DEBUG("!!!!!!!!!!!!!!Running in %s mode", is_server ? "server" : "client");
 
     switch (primitive) {
     case KEY_TYPE_QKD_HYB_KEM:
@@ -1221,6 +1257,9 @@ static int oqsx_key_gen_oqs(OQSX_KEY *key, int gen_kem) {
     int idx_pq;
     oqsx_comp_set_idx(key, NULL, &idx_pq, NULL);
 
+    QKD_DEBUG("GENERATING KEM KEY");
+    QKD_DEBUG("gen_kem: %d", gen_kem);
+
     if (gen_kem)
         return OQS_KEM_keypair(key->oqsx_provider_ctx.oqsx_qs_ctx.kem,
                                key->comp_pubkey[idx_pq],
@@ -1331,6 +1370,7 @@ int oqsx_key_gen(OQSX_KEY *key) {
     if (key->privkey == NULL || key->pubkey == NULL) {
         ret = oqsx_key_allocate_keymaterial(key, 0) ||
               oqsx_key_allocate_keymaterial(key, 1);
+        QKD_DEBUG("Allocated key material!!!!!!!!!!!!!!!");
         ON_ERR_GOTO(ret, err_gen);
     }
 
@@ -1342,6 +1382,14 @@ int oqsx_key_gen(OQSX_KEY *key) {
             ret = 1;
             goto err_gen;
         }
+
+        if (key->privkey == NULL) {
+            QKD_DEBUG("Server detected - skipping key generation");
+            return OQS_SUCCESS;
+        }
+        
+        QKD_DEBUG("Client detected - generating keypair");
+
         oqsx_comp_set_idx(key, NULL, &idx_pq, &idx_qkd);
         ret = !oqsx_key_set_composites(key, 1);
         ON_ERR_GOTO(ret != 0, err_gen);

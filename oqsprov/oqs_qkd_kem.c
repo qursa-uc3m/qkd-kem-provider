@@ -524,6 +524,11 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
     const unsigned char *ctQKD, *ctPQ;
     unsigned char *secretQKD, *secretPQ;
 
+    // For OQS provider operations
+    EVP_PKEY_CTX *pqc_ctx = NULL;
+    EVP_PKEY *pqc_key = NULL;
+    const char *pqc_alg = oqsx_key->tls_name;
+
     QKD_DEBUG("QKD KEM decaps starting");
 
     // Retrieve keyslot indices
@@ -536,31 +541,11 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
     QKD_DEBUG("DECAPS: pq index: %d, qkd index: %d", idx_pq, idx_qkd);
 
     // Get PQ lengths
-    ret = oqs_qs_kem_decaps_keyslot(vpkemctx, NULL, &secretLenPQ, NULL, 0,
-                                    idx_pq);
-    ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
+    //ret = oqs_qs_kem_decaps_keyslot(vpkemctx, NULL, &secretLenPQ, NULL, 0,
+    //                                idx_pq);
+    //ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
 
     QKD_DEBUG("After firs decaps_keyslot call");
-
-    // Print details of each key component
-    /*
-    for (int i = 0; i < oqsx_key->numkeys; i++) {
-        if (oqsx_key->comp_pubkey && oqsx_key->comp_pubkey[i]) {
-            size_t key_len = (i == 0) ? 
-                oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key : 
-                QKD_KSID_SIZE;
-            
-            printf("DECAPS: Public Key Component %d (%zu bytes): ", i, key_len);
-            unsigned char *key_data = (unsigned char *)oqsx_key->comp_pubkey[i];
-            
-            for (size_t j = 0; j < key_len; j++) {
-                printf("%02x", key_data[j]);
-            }
-            printf("\n");
-        } else {
-            QKD_DEBUG("  Public Key Component %d is NULL", i);
-        }
-    }*/
 
     // Print received ciphertext details
     QKD_DEBUG("DECAPS: Received Ciphertext Details:");
@@ -569,6 +554,46 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
         printf("%02x", ct[i]);
     }
     printf("\n");
+
+    // First create context with algorithm configuration
+    if (!qkdkemctx || !qkdkemctx->oqs_ctx) {
+        QKD_DEBUG("Invalid KEM context or OQS context not initialized");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Load or get PQC private key from oqsx_key
+    pqc_key = get_pqc_private_key(qkdkemctx->oqs_ctx, oqsx_key, pqc_alg);
+    if (!pqc_key) {
+        QKD_DEBUG("Failed to get PQC private key");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Create context from key
+    pqc_ctx = EVP_PKEY_CTX_new(pqc_key, NULL);
+    if (!pqc_ctx) {
+        QKD_DEBUG("Failed to create new context from PQC key");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Initialize decapsulation
+    if (EVP_PKEY_decapsulate_init(pqc_ctx, NULL) <= 0) {
+        QKD_DEBUG("Failed to initialize PQC decapsulation");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
+    // Get PQC-specific length from the KEM context
+    const OQS_KEM *kem_ctx = oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem;
+    if (!kem_ctx) {
+        QKD_DEBUG("KEM context is NULL");
+        return OQS_ERROR;
+    }
+
+    ctLenPQ = kem_ctx->length_ciphertext;
+    secretLenPQ = kem_ctx->length_shared_secret;
 
     // Set total sizes
     *secretlen = secretLenQKD + secretLenPQ;
@@ -580,11 +605,7 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
     // print the lengths ctlen, ctLenQKD, ctLenPQ and qs_ctx->length_ciphertext
     QKD_DEBUG("DECAPS: Ciphertext length: %zu, QKD Ciphertext length: %zu, PQ Ciphertext length: %zu, qs_ctx->length_ciphertext: %zu",
               ctlen, ctLenQKD, ctLenPQ, qs_ctx->length_ciphertext);
-
-    ctLenPQ = qs_ctx->length_ciphertext;
     ON_ERR_SET_GOTO(ctlen != (ctLenQKD + ctLenPQ), ret, OQS_ERROR, err);
-
-    QKD_DEBUG("WE ARE HERE");
 
     /* Rule: if the classical algorithm is not FIPS approved
        but the PQ algorithm is: PQ share comes first
@@ -641,9 +662,16 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
 
     QKD_DEBUG("After first qkd_kem decaps_keyslot call");
 
+    // Perform PQ decapsulation using EVP interface
+    if (EVP_PKEY_decapsulate(pqc_ctx, secretPQ, &secretLenPQ, ctPQ, ctLenPQ) <= 0) {
+        QKD_DEBUG("PQC decapsulation failed");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
     // Perform PQ decapsulation
-    ret = oqs_qs_kem_decaps_keyslot(vpkemctx, secretPQ, &secretLenPQ, ctPQ,
-                                    ctLenPQ, idx_pq);
+    //ret = oqs_qs_kem_decaps_keyslot(vpkemctx, secretPQ, &secretLenPQ, ctPQ,
+    //                                ctLenPQ, idx_pq);
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
     QKD_DEBUG("DECAPS: ret value: %d", ret);
     QKD_DEBUG("DECAPS: pq index: %d, qkd index: %d", idx_pq, idx_qkd);
@@ -663,11 +691,14 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
     printf("\n");
 #endif
 
-    ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
+    //ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
 
     QKD_DEBUG("After first qs_kem decaps_keyslot call");
 
     QKD_DEBUG("QKD KEM decaps completed successfully");
+    ret = 1; // TODO_QKD: check return
 err:
+    if (pqc_key) EVP_PKEY_free(pqc_key);
+    if (pqc_ctx) EVP_PKEY_CTX_free(pqc_ctx);
     return ret;
 }
