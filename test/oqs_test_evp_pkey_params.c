@@ -13,70 +13,6 @@
 #include "oqs_prov.h"
 #include "test_common.h"
 
-///// OQS_TEMPLATE_FRAGMENT_HYBRID_SIG_ALGS_START
-
-/** \brief List of hybrid signature algorithms. */
-const char *kHybridSignatureAlgorithms[] = {
-    "p256_dilithium2",
-    "rsa3072_dilithium2",
-    "p384_dilithium3",
-    "p521_dilithium5",
-    "p256_mldsa44",
-    "rsa3072_mldsa44",
-    "p384_mldsa65",
-    "p521_mldsa87",
-    "p256_falcon512",
-    "rsa3072_falcon512",
-    "p256_falconpadded512",
-    "rsa3072_falconpadded512",
-    "p521_falcon1024",
-    "p521_falconpadded1024",
-    "p256_sphincssha2128fsimple",
-    "rsa3072_sphincssha2128fsimple",
-    "p256_sphincssha2128ssimple",
-    "rsa3072_sphincssha2128ssimple",
-    "p384_sphincssha2192fsimple",
-    "p256_sphincsshake128fsimple",
-    "rsa3072_sphincsshake128fsimple",
-    "p256_mayo1",
-    "p256_mayo2",
-    "p384_mayo3",
-    "p521_mayo5",
-    NULL,
-};
-///// OQS_TEMPLATE_FRAGMENT_HYBRID_SIG_ALGS_END
-
-///// OQS_TEMPLATE_FRAGMENT_COMPOSITE_SIG_ALGS_START
-
-/** \brief List of composite signature algorithms. */
-const char *kCompositeSignatureAlgorithms[] = {
-    "mldsa44_pss2048", "mldsa44_rsa2048",
-    "mldsa44_ed25519", "mldsa44_p256",
-    "mldsa44_bp256",   "mldsa65_pss3072",
-    "mldsa65_rsa3072", "mldsa65_p256",
-    "mldsa65_bp256",   "mldsa65_ed25519",
-    "mldsa87_p384",    "mldsa87_bp384",
-    "mldsa87_ed448",   NULL,
-};
-///// OQS_TEMPLATE_FRAGMENT_COMPOSITE_SIG_ALGS_END
-
-///// OQS_TEMPLATE_FRAGMENT_HYBRID_KEM_ALGS_START
-
-/** \brief List of hybrid KEMs. */
-const char *kHybridKEMAlgorithms[] = {
-    "p256_frodo640aes",     "x25519_frodo640aes", "p256_frodo640shake",
-    "x25519_frodo640shake", "p384_frodo976aes",   "x448_frodo976aes",
-    "p384_frodo976shake",   "x448_frodo976shake", "p521_frodo1344aes",
-    "p521_frodo1344shake",  "p256_kyber512",      "x25519_kyber512",
-    "p384_kyber768",        "x448_kyber768",      "x25519_kyber768",
-    "p256_kyber768",        "p521_kyber1024",     "p256_mlkem512",
-    "x25519_mlkem512",      "p384_mlkem768",      "x448_mlkem768",
-    "X25519MLKEM768",       "SecP256r1MLKEM768",  "p521_mlkem1024",
-    "p384_mlkem1024",       "p256_bikel1",        "x25519_bikel1",
-    "p384_bikel3",          "x448_bikel3",        "p521_bikel5",
-    "p256_hqc128",          "x25519_hqc128",      "p384_hqc192",
-    "x448_hqc192",          "p521_hqc256",        NULL,
-}; ///// OQS_TEMPLATE_FRAGMENT_HYBRID_KEM_ALGS_END
 
 /** \brief List of QKD hybrid KEMs. */
 const char *kQKDHybridKEMAlgorithms[] = {
@@ -99,7 +35,7 @@ const char *kQKDHybridKEMAlgorithms[] = {
     "qkd_hqc192",
     "qkd_hqc256",
     NULL,
-}; ///// OQS_TEMPLATE_FRAGMENT_QKD_HYBRID_KEM_ALGS_END
+};
 
 /** \brief Indicates if a string is in a given list of strings.
  *
@@ -115,22 +51,6 @@ static int is_string_in_list(const char **list, const char *s) {
     }
     return 0;
 }
-
-/** \brief Indicates if a signature algorithm is hybrid or not.
- *
- * \param alg Algorithm name.
- *
- * \returns 1 if hybrid, else 0. */
-#define is_signature_algorithm_hybrid(_alg_)                                   \
-    is_string_in_list(kHybridSignatureAlgorithms, (_alg_))
-
-/** \brief Indicates if an kem algorithm is hybrid or not.
- *
- * \param alg Algorithm name.
- *
- * \returns 1 if hybrid, else 0. */
-#define is_kem_algorithm_hybrid(_alg_)                                         \
-    is_string_in_list(kHybridKEMAlgorithms, (_alg_))
 
 /** \returns 1 if QKD hybrid, else 0. */
 #define is_kem_algorithm_qkd_hybrid(_alg_)                                     \
@@ -590,30 +510,7 @@ int main(int argc, char **argv) {
     }
 
     errcnt = 0;
-    algs = OSSL_PROVIDER_query_operation(oqs_provider, OSSL_OP_SIGNATURE,
-                                         &query_nocache);
-    if (!algs) {
-        fprintf(stderr, cRED "  No signature algorithms found" cNORM "\n");
-        ERR_print_errors_fp(stderr);
-        ++errcnt;
-        goto next_alg;
-    }
 
-    for (; algs->algorithm_names != NULL; ++algs) {
-        if (!is_signature_algorithm_hybrid(algs->algorithm_names)) {
-            continue;
-        }
-        if (test_algorithm(libctx, algs->algorithm_names)) {
-            fprintf(stderr, cRED " failed for %s " cNORM "\n",
-                    algs->algorithm_names);
-            ++errcnt;
-        } else {
-            fprintf(stderr, cGREEN "%s succeeded" cNORM "\n",
-                    algs->algorithm_names);
-        }
-    }
-
-next_alg:
     algs = OSSL_PROVIDER_query_operation(oqs_provider, OSSL_OP_KEM,
                                          &query_nocache);
     if (!algs) {
@@ -624,8 +521,7 @@ next_alg:
     }
     // TODO_QKD: Add test for QKD hybrid KEMs
     for (; algs->algorithm_names != NULL; ++algs) {
-        if (!is_kem_algorithm_hybrid(algs->algorithm_names) ||
-            is_kem_algorithm_qkd_hybrid(algs->algorithm_names)) {
+        if (is_kem_algorithm_qkd_hybrid(algs->algorithm_names)) {
             continue;
         }
         if (test_algorithm(libctx, algs->algorithm_names)) {
