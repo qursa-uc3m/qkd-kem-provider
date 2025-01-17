@@ -673,7 +673,7 @@ static void *oqsx_genkey(struct oqsx_gen_ctx *gctx) {
         return NULL;
     OQS_KM_PRINTF3("OQSKEYMGMT: gen called for %s (%s)\n", gctx->oqs_name,
                    gctx->tls_name);
-    if ((key = oqsx_key_new(gctx->libctx, gctx->oqs_name, gctx->tls_name,
+    if ((key = qkd_kem_key_new(gctx->libctx, gctx->oqs_name, gctx->tls_name,
                             gctx->primitive, gctx->propq, gctx->bit_security,
                             gctx->alg_idx, gctx->reverse_share)) == NULL) {
         OQS_KM_PRINTF2("OQSKM: Error generating key for %s\n", gctx->tls_name);
@@ -760,7 +760,7 @@ static int oqsx_gen_set_params(void *genctx, const OSSL_PARAM params[]) {
 #define MAKE_KEM_QKD_KEYMGMT_FUNCTIONS(tokalg, tokoqsalg, bit_security)        \
                                                                                \
     static void *qkd_##tokalg##_new_key(void *provctx) {                       \
-        return oqsx_key_new(PROV_OQS_LIBCTX_OF(provctx), tokoqsalg,            \
+        return qkd_kem_key_new(PROV_OQS_LIBCTX_OF(provctx), tokoqsalg,            \
                             "" #tokalg "", KEY_TYPE_QKD_HYB_KEM, NULL,         \
                             bit_security, -1, 0);                              \
     }                                                                          \

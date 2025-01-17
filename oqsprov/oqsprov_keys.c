@@ -459,7 +459,7 @@ static OQSX_KEY *oqsx_key_new_from_nid(OSSL_LIB_CTX *libctx, const char *propq,
         return NULL;
     }
 
-    return oqsx_key_new(libctx, get_oqsname(nid), tls_algname, get_keytype(nid),
+    return qkd_kem_key_new(libctx, get_oqsname(nid), tls_algname, get_keytype(nid),
                         propq, get_secbits(nid), get_oqsalg_idx(nid),
                         get_reverseshare(nid));
 }
@@ -970,7 +970,7 @@ static const int (*init_kex_fun[])(char *, OQSX_EVP_CTX *) = {
     oqshybkem_init_ecp, oqshybkem_init_ecx};
 extern const char *oqs_oid_alg_list[];
 
-OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
+OQSX_KEY *qkd_kem_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
                        int primitive, const char *propq, int bit_security,
                        int alg_idx, int reverse_share) {
     OQSX_KEY *ret =
@@ -983,7 +983,7 @@ OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
         goto err;
     }
 
-    QKD_DEBUG("oqsx_key_new()");
+    QKD_DEBUG("qkd_kem_key_new()");
 
 #ifdef OQS_PROVIDER_NOATOMIC
     ret->lock = CRYPTO_THREAD_lock_new();

@@ -228,7 +228,7 @@ int oqs_set_nid(char *tlsname, int nid);
 
 /* Create OQSX_KEY data structure based on parameters; key material allocated
  * separately */
-OQSX_KEY *oqsx_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
+OQSX_KEY *qkd_kem_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
                        int is_kem, const char *propq, int bit_security,
                        int alg_idx, int reverse_share);
 
