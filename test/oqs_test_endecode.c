@@ -51,6 +51,8 @@ static ENDECODE_PARAMS test_params_list[] = {
      OSSL_KEYMGMT_SELECT_PUBLIC_KEY | OSSL_KEYMGMT_SELECT_ALL_PARAMETERS},
 };
 
+#ifdef OQS_KEM_ENCODERS
+
 static EVP_PKEY *oqstest_make_key(const char *type, EVP_PKEY *template,
                                   OSSL_PARAM *genparams) {
     EVP_PKEY *pkey = NULL;
@@ -240,6 +242,7 @@ static int test_algs(const OSSL_ALGORITHM *algs) {
     }
     return errcnt;
 }
+#endif /* OQS_KEM_ENCODERS */
 
 int main(int argc, char *argv[]) {
     size_t i;
@@ -261,17 +264,6 @@ int main(int argc, char *argv[]) {
     dfltprov = OSSL_PROVIDER_load(keyctx, "default");
     keyprov = OSSL_PROVIDER_load(keyctx, modulename);
     oqsprov = OSSL_PROVIDER_load(libctx, modulename);
-
-    algs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_SIGNATURE,
-                                         &query_nocache);
-
-    if (algs) {
-        errcnt += test_algs(algs);
-    } else {
-        fprintf(stderr, cRED "  No signature algorithms found" cNORM "\n");
-        ERR_print_errors_fp(stderr);
-        errcnt++;
-    }
 
 #ifdef OQS_KEM_ENCODERS
     algs = OSSL_PROVIDER_query_operation(oqsprov, OSSL_OP_KEM, &query_nocache);

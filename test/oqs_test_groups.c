@@ -87,7 +87,27 @@ static int test_group(const OSSL_PARAM params[], void *data) {
     int *errcnt = (int *)data;
     const OSSL_PARAM *p =
         OSSL_PARAM_locate_const(params, OSSL_CAPABILITY_TLS_GROUP_NAME);
+
+    // Add debug prints for parameter inspection
+    fprintf(stderr, "Checking group parameters:\n");
+    const OSSL_PARAM *curr = params;
+    while (curr && curr->key) {
+        fprintf(stderr, "  Parameter: %s, type: %d\n", curr->key, curr->data_type);
+        if (curr->data_type == OSSL_PARAM_UTF8_STRING) {
+            fprintf(stderr, "    Value: %s\n", (const char*)curr->data);
+        } else if (curr->data_type == OSSL_PARAM_UNSIGNED_INTEGER) {
+            unsigned int val;
+            if (OSSL_PARAM_get_uint32(curr, &val) == 1) {
+                fprintf(stderr, "    Value: %u\n", val);
+            } else {
+                fprintf(stderr, "    Error getting uint value\n");
+            }
+        }
+        curr++;
+    }
+    
     if (p == NULL || p->data_type != OSSL_PARAM_UTF8_STRING) {
+        fprintf(stderr, "Group name parameter not found or wrong type\n");
         ret = -1;
         goto err;
     }

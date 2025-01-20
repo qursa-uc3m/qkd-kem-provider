@@ -49,11 +49,7 @@
 #endif
 #endif
 
-static OSSL_FUNC_kem_newctx_fn oqs_kem_newctx;
 static OSSL_FUNC_kem_encapsulate_init_fn oqs_kem_encaps_init;
-static OSSL_FUNC_kem_encapsulate_fn oqs_qs_kem_encaps;
-static OSSL_FUNC_kem_decapsulate_fn oqs_qs_kem_decaps;
-static OSSL_FUNC_kem_freectx_fn oqs_kem_freectx;
 
 /*
  * What's passed as an actual key is defined by the KEYMGMT interface.
@@ -64,27 +60,6 @@ typedef struct {
 } PROV_OQSKEM_CTX;
 
 /// Common KEM functions
-
-static void *oqs_kem_newctx(void *provctx) {
-    PROV_OQSKEM_CTX *pkemctx = OPENSSL_zalloc(sizeof(PROV_OQSKEM_CTX));
-
-    OQS_KEM_PRINTF("OQS KEM provider called: newctx\n");
-    if (pkemctx == NULL)
-        return NULL;
-    pkemctx->libctx = PROV_OQS_LIBCTX_OF(provctx);
-    // kem will only be set in init
-
-    return pkemctx;
-}
-
-static void oqs_kem_freectx(void *vpkemctx) {
-    PROV_OQSKEM_CTX *pkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
-
-    OQS_KEM_PRINTF("OQS KEM provider called: freectx\n");
-    oqsx_key_free(pkemctx->kem);
-    OPENSSL_free(pkemctx);
-}
-
 static int oqs_kem_decapsencaps_init(void *vpkemctx, void *vkem,
                                      int operation) {
     PROV_OQSKEM_CTX *pkemctx = (PROV_OQSKEM_CTX *)vpkemctx;
@@ -224,39 +199,7 @@ static int oqs_qs_kem_decaps_keyslot(void *vpkemctx, unsigned char *out,
                                          pkemctx->kem->comp_privkey[keyslot]);
 }
 
-static int oqs_qs_kem_encaps(void *vpkemctx, unsigned char *out, size_t *outlen,
-                             unsigned char *secret, size_t *secretlen) {
-    return oqs_qs_kem_encaps_keyslot(vpkemctx, out, outlen, secret, secretlen,
-                                     0);
-}
-
-static int oqs_qs_kem_decaps(void *vpkemctx, unsigned char *out, size_t *outlen,
-                             const unsigned char *in, size_t inlen) {
-    return oqs_qs_kem_decaps_keyslot(vpkemctx, out, outlen, in, inlen, 0);
-}
-
-#include "oqs_hyb_kem.c"
 #include "oqs_qkd_kem.c"
-
-#define MAKE_KEM_FUNCTIONS(alg)                                                \
-    const OSSL_DISPATCH oqs_##alg##_kem_functions[] = {                        \
-        {OSSL_FUNC_KEM_NEWCTX, (void (*)(void))oqs_kem_newctx},                \
-        {OSSL_FUNC_KEM_ENCAPSULATE_INIT, (void (*)(void))oqs_kem_encaps_init}, \
-        {OSSL_FUNC_KEM_ENCAPSULATE, (void (*)(void))oqs_qs_kem_encaps},        \
-        {OSSL_FUNC_KEM_DECAPSULATE_INIT, (void (*)(void))oqs_kem_decaps_init}, \
-        {OSSL_FUNC_KEM_DECAPSULATE, (void (*)(void))oqs_qs_kem_decaps},        \
-        {OSSL_FUNC_KEM_FREECTX, (void (*)(void))oqs_kem_freectx},              \
-        {0, NULL}};
-
-#define MAKE_HYB_KEM_FUNCTIONS(alg)                                            \
-    const OSSL_DISPATCH oqs_##alg##_kem_functions[] = {                        \
-        {OSSL_FUNC_KEM_NEWCTX, (void (*)(void))oqs_kem_newctx},                \
-        {OSSL_FUNC_KEM_ENCAPSULATE_INIT, (void (*)(void))oqs_kem_encaps_init}, \
-        {OSSL_FUNC_KEM_ENCAPSULATE, (void (*)(void))oqs_hyb_kem_encaps},       \
-        {OSSL_FUNC_KEM_DECAPSULATE_INIT, (void (*)(void))oqs_kem_decaps_init}, \
-        {OSSL_FUNC_KEM_DECAPSULATE, (void (*)(void))oqs_hyb_kem_decaps},       \
-        {OSSL_FUNC_KEM_FREECTX, (void (*)(void))oqs_kem_freectx},              \
-        {0, NULL}};
 
 #define MAKE_QKD_KEM_FUNCTIONS(alg)                                            \
     const OSSL_DISPATCH oqs_##alg##_kem_functions[] = {                        \
@@ -269,6 +212,4 @@ static int oqs_qs_kem_decaps(void *vpkemctx, unsigned char *out, size_t *outlen,
         {0, NULL}};
 
 // keep this just in case we need to become ALG-specific at some point in time
-MAKE_KEM_FUNCTIONS(generic)
-MAKE_HYB_KEM_FUNCTIONS(hybrid)
 MAKE_QKD_KEM_FUNCTIONS(qkd)
