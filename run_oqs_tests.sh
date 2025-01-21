@@ -11,7 +11,6 @@ show_help() {
     echo "  -k, --kem        Run KEM tests"
     echo "  -g, --groups     Run TLS Group tests"
     echo "  -p, --params     Run EVP PKEY params tests"
-    echo "  -b, --bench N    Run benchmarks with N iterations"
     echo "  -a, --all        Run all tests"
     echo "  -h, --help       Show this help message"
     echo ""
@@ -132,35 +131,6 @@ run_params_test() {
     return $result
 }
 
-# Run KEM benchmarks
-run_kem_bench() {
-    local iterations=$1
-    echo "Running KEM benchmarks with $iterations iterations..."
-    
-    if [ ! -f "_build/test/oqs_bench_kems" ]; then
-        echo "❌ Benchmark binary not found"
-        return 1
-    fi
-
-    cd _build/test
-    echo "Running from directory: $(pwd)"
-
-    ./oqs_bench_kems "qkdkemprovider" "${OPENSSL_CONF}" "$iterations"
-    local result=$?
-    
-    cd "${BASE_DIR}"
-    
-    if [ $result -eq 0 ]; then
-        echo "✅ KEM benchmarks completed"
-    else
-        echo "❌ KEM benchmarks failed"
-        echo "Return code: $result"
-    fi
-    
-    return $result
-}
-
-
 main() {
     local run_kem=0
     local run_groups=0
@@ -250,16 +220,6 @@ main() {
         run_params_test
         local params_status=$?
         [ $params_status -ne 0 ] && exit_status=1
-    fi
-
-    # Run benchmarks if requested
-    if [ $run_bench -eq 1 ]; then
-        echo "==============================================="
-        echo "Starting KEM Benchmarks"
-        echo "==============================================="
-        run_kem_bench $bench_iterations
-        local bench_status=$?
-        [ $bench_status -ne 0 ] && exit_status=1
     fi
 
     # Print final summary

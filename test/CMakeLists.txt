@@ -30,15 +30,6 @@ endif()
 add_executable(oqs_test_kems oqs_test_kems.c test_common.c)
 target_link_libraries(oqs_test_kems PRIVATE ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL_SOCKET_LIBS})
 
-add_executable(oqs_bench_kems oqs_bench_kems.c test_common.c)
-target_link_libraries(oqs_bench_kems PRIVATE ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL_SOCKET_LIBS})
-
-if (MSVC)
-    set_target_properties(oqs_bench_kems 
-    ENVIRONMENT "OPENSSL_MODULES=${OQS_PROV_BINARY_DIR};OPENSSL_CONF=${CMAKE_CURRENT_SOURCE_DIR}/openssl-ca.cnf"
-    )
-endif()
-
 add_test(
     NAME oqs_groups
     COMMAND oqs_test_groups
