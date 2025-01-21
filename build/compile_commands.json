@@ -1,0 +1,112 @@
+[
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqsprov.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqsprov_capabilities.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov_capabilities.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov_capabilities.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqsprov_keys.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov_keys.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov_keys.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqs_kmgmt.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_kmgmt.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_kmgmt.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqs_kem.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_kem.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_kem.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqs_encode_key2any.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_encode_key2any.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_encode_key2any.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqs_endecoder_common.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_endecoder_common.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_endecoder_common.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqs_decode_der2key.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_decode_der2key.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_decode_der2key.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqsprov_bio.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov_bio.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqsprov_bio.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqs_qkd_ctx.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_qkd_ctx.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_qkd_ctx.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -DOQSPROVIDER_VERSION_TEXT=\\\"0.1.0-dev\\\" -DOQS_PROVIDER_COMMIT=\"\\\" (893b9d4)\\\"\" -Dqkdkemprovider_EXPORTS -I/usr/local/include/qkd-etsi-api -isystem /usr/local/include/oqs -g -fPIC -Wunused-function -std=gnu11 -o oqsprov/CMakeFiles/qkdkemprovider.dir/oqs_qkd_etsi_api_wrapper.c.o -c /home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_qkd_etsi_api_wrapper.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/oqsprov/oqs_qkd_etsi_api_wrapper.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_kems.dir/oqs_test_kems.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/oqs_test_kems.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/oqs_test_kems.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_kems.dir/test_common.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/test_common.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/test_common.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_bench_kems.dir/oqs_bench_kems.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/oqs_bench_kems.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/oqs_bench_kems.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_bench_kems.dir/test_common.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/test_common.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/test_common.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_groups.dir/oqs_test_groups.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/oqs_test_groups.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/oqs_test_groups.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_groups.dir/test_common.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/test_common.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/test_common.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_groups.dir/tlstest_helpers.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/tlstest_helpers.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/tlstest_helpers.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_endecode.dir/oqs_test_endecode.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/oqs_test_endecode.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/oqs_test_endecode.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_endecode.dir/test_common.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/test_common.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/test_common.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -I/home/dsobral/Repos/qkd-kem-provider/test/../oqsprov -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_evp_pkey_params.dir/oqs_test_evp_pkey_params.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/oqs_test_evp_pkey_params.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/oqs_test_evp_pkey_params.c"
+},
+{
+  "directory": "/home/dsobral/Repos/qkd-kem-provider/build",
+  "command": "/usr/bin/gcc -I/usr/local/include/oqs -I/usr/local/include/qkd-etsi-api -I/home/dsobral/Repos/qkd-kem-provider/test/../oqsprov -g -Wunused-function -std=gnu11 -o test/CMakeFiles/oqs_test_evp_pkey_params.dir/test_common.c.o -c /home/dsobral/Repos/qkd-kem-provider/test/test_common.c",
+  "file": "/home/dsobral/Repos/qkd-kem-provider/test/test_common.c"
+}
+]

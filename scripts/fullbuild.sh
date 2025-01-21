@@ -128,8 +128,8 @@ fi
 if [ ! -f "_build/lib/qkdkemprovider.$SHLIBEXT" ]; then
    echo "qkdkemprovider (_build/lib/qkdkemprovider.$SHLIBEXT) not built: Building..."
    # for full debug build add: -DCMAKE_BUILD_TYPE=Debug
-   BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
-   #BUILD_TYPE=""
+   #BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
+   BUILD_TYPE=""
    # for omitting public key in private keys add -DNOPUBKEY_IN_PRIVKEY=ON
    if [ -z "$OPENSSL_INSTALL" ]; then
        cmake $CMAKE_PARAMS $CMAKE_OPENSSL_LOCATION $BUILD_TYPE $OQSPROV_CMAKE_PARAMS -S . -B _build && cmake --build _build

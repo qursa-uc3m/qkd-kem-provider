@@ -1,0 +1,55 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"oqsprov/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 86,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "/usr/lib/x86_64-linux-gnu/ossl-modules",
+			"paths" : 
+			[
+				"lib/qkdkemprovider.so"
+			],
+			"targetId" : "qkdkemprovider::@62bdc385c757a3a83f19",
+			"targetIndex" : 33,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "include/oqs-provider",
+			"paths" : 
+			[
+				"oqsprov/oqs_prov.h"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "oqsprov",
+		"source" : "oqsprov"
+	}
+}
