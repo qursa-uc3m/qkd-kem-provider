@@ -149,14 +149,4 @@ python3 ./scripts/test_qkd_kem_tls.py
 
 which is based in [open-quantum-safe/oqs-provider/scripts/test_tls_full.py](https://github.com/open-quantum-safe/oqs-provider/blob/main/scripts/test_tls_full.py) and will run the server and the client automatically.
 
-## Benchmarks 
-
-We have added an additional a benchmarking tool for measuring the performance of KEM operations. To run benchmarks on all supported KEM algorithms (including QKD hybrids), use:
-
-```bash
-./run_oqs_tests.sh --bench <iterations>
-```
-
-This will run timing measurements for Key Generation, Encapsulation, and Decapsulation operations across all enabled algorithms. The number of iterations specifies how many times each operation will be performed for statistical significance. Results are automatically saved in CSV format under the benchmarks directory, with filenames following the pattern *kem_bench_YYYYMMDD.csv*. The CSV output includes detailed timing data for each operation and iteration.
-
 
