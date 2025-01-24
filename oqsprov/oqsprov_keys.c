@@ -1292,15 +1292,18 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
 #elif defined(ETSI_014_API)
     // For ETSI 014: Get both key ID and key material immediately
     // Bob will later use GET_KEY_WITH_IDS to get his copy
-    if (!qkd_get_key(qkd_ctx)) {
-        QKD_DEBUG("Failed to get QKD key material");
-        ret = OQS_ERROR;
-        goto err;
+    // TODO_QKD: experimenting, trying to avoid unnecesary? key generation on server end
+    const char* is_server = getenv("IS_TLS_SERVER"); 
+    if (is_server == NULL) {
+        if (!qkd_get_key(qkd_ctx)) {
+            QKD_DEBUG("Failed to get QKD key material");
+            ret = OQS_ERROR;
+            goto err;
+        }
+        // Store both public key ID and private key
+        memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
+        memcpy(key->comp_privkey[idx_qkd], qkd_ctx->key, QKD_KEY_SIZE);
     }
-    
-    // Store both public key ID and private key
-    memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
-    memcpy(key->comp_privkey[idx_qkd], qkd_ctx->key, QKD_KEY_SIZE);
 #endif
 
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
