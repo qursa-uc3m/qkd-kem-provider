@@ -25,7 +25,23 @@ if(OQS_PROVIDER_BUILD_STATIC)
   set(OQS_LIBRARY_TYPE STATIC)
 endif()
 
+# Add UUID library
+find_library(UUID_LIB uuid)
+if(NOT UUID_LIB)
+    message(FATAL_ERROR "libuuid not found. Please install uuid-dev package.")
+endif()
+message(STATUS "Found UUID library: ${UUID_LIB}")
+
 add_library(qkdkemprovider ${OQS_LIBRARY_TYPE} ${PROVIDER_SOURCE_FILES})
+
+# Pick up definition from parent scope
+if(QKD_USE_qukaydee)
+    add_compile_definitions(QKD_USE_QUKAYDEE)
+elseif(QKD_USE_cerberis_xgr)
+    add_compile_definitions(QKD_USE_CERBERIS_XGR)
+elseif(QKD_USE_simulated)
+    add_compile_definitions(QKD_USE_SIMULATED)
+endif()
 
 set_target_properties(qkdkemprovider
     PROPERTIES
@@ -73,10 +89,18 @@ if (OQS_LIBRARY_TYPE STREQUAL "MODULE")
   endif()
 endif()
 
-target_link_libraries(qkdkemprovider PUBLIC OQS::oqs ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL_SOCKET_LIBS})
+#target_link_libraries(qkdkemprovider PUBLIC OQS::oqs ${OPENSSL_CRYPTO_LIBRARY} ${OQS_ADDL_SOCKET_LIBS})
+
+target_compile_definitions(qkdkemprovider 
+    PUBLIC
+    $<$<STREQUAL:${QKD_BACKEND},qukaydee>:QKD_USE_QUKAYDEE>
+    $<$<STREQUAL:${QKD_BACKEND},cerberis_xgr>:QKD_USE_CERBERIS_XGR>
+    $<$<STREQUAL:${QKD_BACKEND},simulated>:QKD_USE_SIMULATED>
+)
 
 target_link_libraries(qkdkemprovider
-    PUBLIC 
+    PUBLIC
+    ${UUID_LIB} 
     OQS::oqs 
     ${OPENSSL_CRYPTO_LIBRARY} 
     ${QKD_ETSI_API_LIB}

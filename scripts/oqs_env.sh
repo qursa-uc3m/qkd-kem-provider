@@ -15,7 +15,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
 
 
-
 # Export environment variables
 export OPENSSL_CONF="${OQS_DIR}/oqs-provider/scripts/openssl-ca.cnf"
 export OPENSSL_MODULES="${PROJECT_DIR}/_build/lib"
@@ -28,3 +27,33 @@ echo "OPENSSL_CONF=$OPENSSL_CONF"
 echo "OPENSSL_MODULES=$OPENSSL_MODULES"
 echo "PATH updated to include: ${OQS_DIR}/.local/bin"
 echo "LD_LIBRARY_PATH updated to include: ${OQS_DIR}/.local/lib64"
+
+# Check if CERBERIS_XGR is enabled
+if [ "${QKD_BACKEND}" = "qukaydee" ]; then
+    echo "Setting up QuKayDee environment:"
+    
+    # Certificate configuration
+    export QKD_MASTER_CA_CERT_PATH="${PROJECT_DIR}/qkd_certs/account-2507-server-ca-qukaydee-com.crt"
+    export QKD_SLAVE_CA_CERT_PATH="${PROJECT_DIR}/qkd_certs/account-2507-server-ca-qukaydee-com.crt"
+
+    export QKD_MASTER_CERT_PATH="${PROJECT_DIR}/qkd_certs/sae-1.crt"
+    export QKD_MASTER_KEY_PATH="${PROJECT_DIR}/qkd_certs/sae-1.key"
+
+    export QKD_SLAVE_CERT_PATH="${PROJECT_DIR}/qkd_certs/sae-2.crt"
+    export QKD_SLAVE_KEY_PATH="${PROJECT_DIR}/qkd_certs/sae-2.key"
+    
+    # QuKayDee configuration
+    if [ -z "${ACCOUNT_ID}" ]; then
+        echo "Warning: ACCOUNT_ID not set. Please set your QuKayDee account ID."
+    else
+        export QKD_MASTER_KME_HOSTNAME="https://kme-1.acct-${ACCOUNT_ID}.etsi-qkd-api.qukaydee.com"
+        export QKD_SLAVE_KME_HOSTNAME="https://kme-2.acct-${ACCOUNT_ID}.etsi-qkd-api.qukaydee.com"
+        export QKD_MASTER_SAE="sae-1"
+        export QKD_SLAVE_SAE="sae-2"
+        
+        echo "QKD_MASTER_KME_HOSTNAME=$QKD_MASTER_KME_HOSTNAME"
+        echo "QKD_SLAVE_KME_HOSTNAME=$QKD_SLAVE_KME_HOSTNAME"
+    fi
+else
+    echo "Using default QKD backend (simulated)"
+fi

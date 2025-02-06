@@ -15,12 +15,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #include <qkd-etsi-api/qkd_etsi_api.h>
 #ifdef ETSI_004_API
 #include <qkd-etsi-api/etsi004/api.h>
 #elif defined(ETSI_014_API)
 #include <qkd-etsi-api/etsi014/api.h>
 #endif
+
+#include <uuid/uuid.h>
 
 #define DEBUG_QKD
 
@@ -100,6 +103,21 @@ bool qkd_close(QKD_CTX *ctx) {
 
 #ifdef ETSI_014_API
 
+/* Returns 0 on success, non-zero on error */
+static int encode_UUID(const char *uuid_str, unsigned char bin[16]) {
+    /* uuid_parse returns 0 on success and -1 on error */
+    if (uuid_parse(uuid_str, bin) == -1)
+        return -1;
+    return 0;
+}
+
+/* Decode the 16-byte binary UUID to a string.
+ * uuid_str must be able to hold at least 37 bytes (36 characters + null).
+ */
+static void decode_UUID(const unsigned char bin[16], char uuid_str[37]) {
+    uuid_unparse(bin, uuid_str);
+}
+
 static unsigned char *base64_decode(const char *in, size_t *outlen) {
 
     BIO *b64 = BIO_new(BIO_f_base64());
@@ -122,39 +140,29 @@ static unsigned char *base64_decode(const char *in, size_t *outlen) {
 
 bool qkd_get_status(QKD_CTX *ctx) {
 
-    QKD_DEBUG("ETSI014: Requesting status from KME");
+    fprintf(stderr, "[DEBUG TEST] qkd_get_status is executing!\n");
 
-    if (!ctx) {
-        QKD_DEBUG("ETSI014: Invalid ctx");
+    if (!ctx || !ctx->source_uri || !ctx->sae_id) {
+        QKD_DEBUG("ETSI014: Invalid ctx or missing KME/SAE info");
         return false;
     }
 
-    if (!ctx->source_uri || !ctx->dest_uri) {
-        QKD_DEBUG("ETSI014: NULL URIs before GET_KEY call");
-        return false;
-    }
+    QKD_DEBUG("ETSI014: Requesting status from KME with hostname=%s, SAE=%s", 
+              ctx->source_uri, ctx->sae_id);
 
-    if (!ctx->status.source_KME_ID) {
-        QKD_DEBUG("ETSI014: No source KME ID set");
-    }
+    // Let API handle URL construction
+    uint32_t ret = GET_STATUS(ctx->master_kme, ctx->slave_sae, &ctx->status);
 
-    QKD_DEBUG("ETSI014: Requesting status from KME");
-    
-    //qkd_status_t status_resp;
-    //memset(&status_resp, 0, sizeof(status_resp));
-    QKD_DEBUG("ETSI014: Requesting status from KME with source=%s, dest=%s", 
-              ctx->source_uri, ctx->dest_uri);
-    uint32_t ret = GET_STATUS(ctx->source_uri, ctx->dest_uri, &ctx->status);
-
-    QKD_DEBUG("ETSI014: GET_STATUS returned %u", ret);
+    QKD_DEBUG("ETSI014: get_status returned %u", ret);
     if (ret == QKD_STATUS_OK) {
-        QKD_DEBUG("ETSI014: Got status from ETSI QKD 014 KME");
+        QKD_DEBUG("ETSI014: Status received from KME");
+        QKD_DEBUG("ETSI014: Source KME ID: %s", 
+                 ctx->status.source_KME_ID ? ctx->status.source_KME_ID : "NULL");
         return true;
-    } else {
-        QKD_DEBUG("ETSI014: Failed to get status: ret=%u", ret);
-        return false;
     }
-   return true;
+
+    QKD_DEBUG("ETSI014: Failed to get status: ret=%u", ret);
+    return false;
 }
 
 bool qkd_get_key_with_ids(QKD_CTX *ctx) {
@@ -163,20 +171,35 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
         return false;
     }
     QKD_DEBUG("ETSI 014: Requesting key from KME using key IDs");
-    // We assume ctx->key_id stores a single key_id as a null-terminated string.
-    qkd_key_ids_t key_ids;
-    memset(&key_ids, 0, sizeof(key_ids));
+    QKD_DEBUG("ETSI 014: Initial state - Is initiator: %d", ctx->is_initiator);
 
+    // We assume ctx->key_id stores a single key_id as a null-terminated string.
+    qkd_key_ids_t key_ids = {0};
     key_ids.key_ID_count = 1;
     key_ids.key_IDs = malloc(sizeof(qkd_key_id_t));
     if (!key_ids.key_IDs) {
         QKD_DEBUG("ETSI014: Memory allocation failed");
         return false;
     }
-    memset(key_ids.key_IDs, 0, sizeof(qkd_key_id_t));
 
-    // Assume ctx->key_id is a UUID string
-    key_ids.key_IDs[0].key_ID = strdup((char *)ctx->key_id);
+    // Convert binary key ID to hex string
+    //char hex_key_id[33]; // 16 bytes = 32 hex chars + null terminator
+    //for(int i = 0; i < 16; i++) {
+    //    sprintf(&hex_key_id[i*2], "%02X", ctx->key_id[i]);
+    //}
+    //hex_key_id[32] = '\0';
+
+    // Add debug to verify hex conversion
+    //QKD_DEBUG("ETSI014: Binary key ID converted to hex: %s", hex_key_id);
+
+    //key_ids.key_IDs[0].key_ID = strdup(hex_key_id);
+    //key_ids.key_IDs[0].key_ID = strdup((char *)ctx->key_id);
+
+    // Convert binary UUID back to string format for API
+    char uuid_str[37];  // 36 chars + null terminator
+    decode_UUID(ctx->key_id, uuid_str);
+    QKD_DEBUG("ETSI014: Using key ID: %s", uuid_str);
+    key_ids.key_IDs[0].key_ID = strdup(uuid_str);
     if (!key_ids.key_IDs[0].key_ID) {
         QKD_DEBUG("ETSI014: Memory allocation for key_ID failed");
         free(key_ids.key_IDs);
@@ -186,7 +209,13 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
     qkd_key_container_t container;
     memset(&container, 0, sizeof(container));
 
-    uint32_t ret = GET_KEY_WITH_IDS(ctx->source_uri, ctx->dest_uri, &key_ids, &container);
+   // kme_hostname: Bob's KME (slave)
+    // master_sae_id: Alice's SAE ID (master who originally got the key)
+    QKD_DEBUG("ETSI014: Calling GET_KEY_WITH_IDS - KME: %s, Master SAE: %s, Key ID: %s",
+              ctx->slave_kme, ctx->master_sae, key_ids.key_IDs[0].key_ID);
+
+    uint32_t ret = GET_KEY_WITH_IDS(ctx->slave_kme, ctx->master_sae, &key_ids, &container);
+
     free(key_ids.key_IDs[0].key_ID);
     free(key_ids.key_IDs);
 
@@ -271,8 +300,10 @@ bool qkd_get_key(QKD_CTX *ctx) {
     QKD_DEBUG("ETSI014: Requesting key from KME with source=%s, dest=%s",
               ctx->source_uri, ctx->dest_uri);
     
-    uint32_t ret = GET_KEY(ctx->source_uri, ctx->dest_uri, &req, &container);
+    uint32_t ret = GET_KEY(ctx->master_kme, ctx->slave_sae, &req, &container);
     QKD_DEBUG("ETSI014: GET_KEY returned %u", ret);
+    char *alice_key_id = strdup(container.keys[0].key_ID);
+    QKD_DEBUG("[SUCCESS]: ALICE got key with ID: %s\n", alice_key_id);
 
     if (ret == QKD_STATUS_OK && container.key_count > 0) {
         qkd_key_t *first_key = &container.keys[0];
@@ -282,13 +313,34 @@ bool qkd_get_key(QKD_CTX *ctx) {
         }
 
         // Store key ID if provided
+        //if (first_key->key_ID) {
+        //    unsigned char tmp_id;
+        //    for(int i = 0; i < QKD_KSID_SIZE; i++) {
+        //        sscanf(first_key->key_ID + (i * 2), "%02hhx", &tmp_id);
+        //        ctx->key_id[i] = tmp_id;
+        //    }
+        //}
+
         if (first_key->key_ID) {
-            unsigned char tmp_id;
-            for(int i = 0; i < QKD_KSID_SIZE; i++) {
-                sscanf(first_key->key_ID + (i * 2), "%02hhx", &tmp_id);
-                ctx->key_id[i] = tmp_id;
+            // First store the original UUID for debugging
+            QKD_DEBUG("ETSI014: Received key ID: %s", first_key->key_ID);
+            
+            // Convert UUID string to binary format for storage
+            if (encode_UUID(first_key->key_ID, ctx->key_id) != 0) {
+                QKD_DEBUG("ETSI014: Failed to encode UUID");
+                return false;
             }
+            QKD_DEBUG("ETSI014: Successfully encoded UUID to binary");
         }
+
+        //#ifndef NDEBUG
+        // Extra debug line to print the binary key ID as a hex string:
+        //QKD_DEBUG("Stored key_id: ");
+        //for (int i = 0; i < 36; i++) {
+        //    fprintf(stderr, "%02X", ctx->key_id[i]);
+        //}
+        //fprintf(stderr, "\n");
+        //#endif
 
         // Decode and store key
         size_t outlen;
@@ -297,6 +349,15 @@ bool qkd_get_key(QKD_CTX *ctx) {
             QKD_DEBUG("ETSI014: Base64 decode failed");
             return false;
         }
+
+        #ifndef NDEBUG
+        QKD_DEBUG("Algorithm: X25519, outlen = %zu", outlen);
+        QKD_DEBUG("Decoded key (hex dump):");
+        for (size_t i = 0; i < outlen; i++) {
+            fprintf(stderr, "%02X ", decoded_key[i]);
+        }
+        fprintf(stderr, "\n");
+        #endif
 
         ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, 
                                                decoded_key, outlen);

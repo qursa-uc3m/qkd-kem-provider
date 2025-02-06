@@ -76,6 +76,8 @@ message(STATUS "QKD ETSI API found: ${QKD_ETSI_API_LIB}")
 function(targets_set_static_provider)
   foreach(target ${ARGN})
     target_compile_definitions(${target} PRIVATE "OQS_PROVIDER_STATIC")
+    # Link UUID library to all targets
+    target_link_libraries(${target} PRIVATE ${UUID_LIB} qkdkemprovider)
     if(NOT target STREQUAL qkdkemprovider)
       target_link_libraries(${target} PRIVATE qkdkemprovider)
     endif()
