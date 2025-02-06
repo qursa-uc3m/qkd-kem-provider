@@ -271,10 +271,12 @@ static int oqsx_comp_set_offsets(const OQSX_KEY *key, int set_privkey_offsets,
                 }
             } else if (key->numkeys == 2) {
                 // Structure: PQ_KEY | QKD_KEY
-                key->comp_privkey[0] = privkey;
+                key->comp_privkey[0] = privkey + SIZE_OF_UINT32;
                 key->comp_privkey[1] =
-                    privkey +
+                    privkey + SIZE_OF_UINT32 + 
                     key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key;
+                QKD_DEBUG("Offset for PQC privkey pointer = %zu", (size_t)SIZE_OF_UINT32);
+                QKD_DEBUG("Offset for QKD privkey pointer = %zu", (size_t)SIZE_OF_UINT32 + (size_t)key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key);
             } else {
                 ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_ENCODING);
                 ret = 0;
@@ -345,10 +347,12 @@ static int oqsx_comp_set_offsets(const OQSX_KEY *key, int set_privkey_offsets,
                 }
             } else if (key->numkeys == 2) {
                 // Structure: PQ_KEY | QKD_KEY_ID
-                key->comp_pubkey[0] = pubkey;
+                key->comp_pubkey[0] = pubkey + SIZE_OF_UINT32;
                 key->comp_pubkey[1] =
-                    pubkey +
+                    pubkey + SIZE_OF_UINT32 +
                     key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key;
+                QKD_DEBUG("Offset for PQC pubkey pointer = %zu", (size_t)SIZE_OF_UINT32);
+                QKD_DEBUG("Offset for QKD pubkey pointer = %zu", (size_t)SIZE_OF_UINT32 + (size_t)key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key);
             } else {
                 ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_ENCODING);
                 ret = 0;
@@ -1033,12 +1037,12 @@ OQSX_KEY *qkd_kem_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
         // Calculate key lengths including QKD components
         ret->privkeylen =
             (ret->numkeys - 1) * SIZE_OF_UINT32 + // Size headers
-            32 +                                  // QKD symmetric key
+            QKD_KEY_SIZE +                                  // QKD symmetric key
             ret->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key; // PQ key
 
         ret->pubkeylen =
             (ret->numkeys - 1) * SIZE_OF_UINT32 + // Size headers
-            256 +                                 // QKD ID
+            QKD_KSID_SIZE +                                 // QKD ID
             ret->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key; // PQ key
         ret->keytype = primitive;
         break;
@@ -1303,6 +1307,7 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
         // Store both public key ID and private key
         memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
         memcpy(key->comp_privkey[idx_qkd], qkd_ctx->key, QKD_KEY_SIZE);
+        QKD_DEBUG("QKD key material retrieved!!!");
     }
 #endif
 
@@ -1365,7 +1370,32 @@ int oqsx_key_gen(OQSX_KEY *key) {
         ret = oqsx_key_gen_qkd(key);
         ON_ERR_GOTO(ret != OQS_SUCCESS, err_gen);
 
-        OQS_KEY_PRINTF3("OQSKM: OQSX_KEY privkeylen %ld & pubkeylen: %ld\n",
+        if (key->keytype == KEY_TYPE_QKD_HYB_KEM && key->numkeys == 2) {
+        int idx_pq = 0; // for PQC component in a PQC+QKD hybrid
+        if (key->comp_pubkey && key->comp_pubkey[idx_pq]) {
+            unsigned char *pqc_pub = (unsigned char *) key->comp_pubkey[idx_pq];
+            size_t pqc_len = key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key;
+            QKD_DEBUG("_____PQC public key (idx %d, %zu bytes):", idx_pq, pqc_len);
+            for (size_t i = 0; i < pqc_len; i++) {
+                fprintf(stderr, "%02x", pqc_pub[i]);
+            }
+            fprintf(stderr, "\n");
+        }
+        if (key->keytype == KEY_TYPE_QKD_HYB_KEM && key->numkeys == 2) {
+        int idx_qkd = key->numkeys - 1; // For PQC+QKD, idx_qkd should be 1.
+        if (key->comp_pubkey && key->comp_pubkey[idx_qkd]) {
+            unsigned char *qkd_pub = (unsigned char *) key->comp_pubkey[idx_qkd];
+            size_t qkd_len = QKD_KSID_SIZE;  // QKD public key is fixed size
+            QKD_DEBUG("_____QKD public key (idx %d, %zu bytes):", idx_qkd, qkd_len);
+            for (size_t i = 0; i < qkd_len; i++) {
+                fprintf(stderr, "%02x", qkd_pub[i]);
+            }
+            fprintf(stderr, "\n");
+        }
+    }
+    }
+
+        QKD_DEBUG("OQSKM: OQSX_KEY privkeylen %ld & pubkeylen: %ld\n",
                     key->privkeylen, key->pubkeylen);
     } else {
         ret = 1;

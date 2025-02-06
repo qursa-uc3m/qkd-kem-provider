@@ -26,6 +26,20 @@
 #include <qkd-etsi-api/etsi014/api.h>
 #endif
 
+#define DEBUG_QKD
+
+#ifdef NDEBUG
+#define QKD_DEBUG(fmt, ...)
+#else
+#ifdef DEBUG_QKD
+#define QKD_DEBUG(fmt, ...)                                                    \
+    fprintf(stderr, "QKD DEBUG: %s:%d: " fmt "\n", __func__, __LINE__,         \
+            ##__VA_ARGS__)
+#else
+#define QKD_DEBUG(fmt, ...)
+#endif
+#endif // NDEBUG
+
 // stolen from openssl/crypto/param_build_set.c as
 // ossl_param_build_set_octet_string not public API:
 
@@ -459,13 +473,26 @@ static int oqsx_get_hybrid_params(OQSX_KEY *key, OSSL_PARAM params[]) {
     if (idx_pq >= 0) {
         if (key->comp_pubkey != NULL && key->comp_pubkey[idx_pq] != NULL) {
             pq_pubkey = key->comp_pubkey[idx_pq];
-            pq_pubkey_len =
-                key->pubkeylen - classical_pubkey_len - SIZE_OF_UINT32;
+            if (key->keytype == KEY_TYPE_QKD_HYB_KEM && idx_classic < 0) {
+                /* No classical component in a PQC+QKD hybrid.
+                * Total public key layout: [header (SIZE_OF_UINT32)] + [PQ pubkey] + [QKD key ID (QKD_KSID_SIZE)]
+                * Thus, PQ pubkey length = total length - header - QKD_KSID_SIZE.
+                */
+                pq_pubkey_len = key->pubkeylen - SIZE_OF_UINT32 - QKD_KSID_SIZE;
+            } else {
+                pq_pubkey_len = key->pubkeylen - classical_pubkey_len - SIZE_OF_UINT32;
+            }
         }
-        if (key->comp_privkey != NULL && key->comp_privkey != NULL) {
+        if (key->comp_privkey != NULL && key->comp_privkey[idx_pq] != NULL) {
             pq_privkey = key->comp_privkey[idx_pq];
-            pq_privkey_len =
-                key->privkeylen - classical_privkey_len - SIZE_OF_UINT32;
+            if (key->keytype == KEY_TYPE_QKD_HYB_KEM && idx_classic < 0) {
+                /* For the private key layout: [header (SIZE_OF_UINT32)] + [PQ privkey] + [QKD key (QKD_KEY_SIZE)]
+                * Thus, PQ privkey length = total length - header - QKD_KEY_SIZE.
+                */
+                pq_privkey_len = key->privkeylen - SIZE_OF_UINT32 - QKD_KEY_SIZE;
+            } else {
+                pq_privkey_len = key->privkeylen - classical_privkey_len - SIZE_OF_UINT32;
+            }
         }
     }
 
@@ -508,7 +535,7 @@ static int oqsx_get_hybrid_params(OQSX_KEY *key, OSSL_PARAM params[]) {
             return -1;
         if ((p = OSSL_PARAM_locate(
                  params, OQS_HYBRID_PKEY_PARAM_QKD_PRIV_KEY)) != NULL &&
-            !OSSL_PARAM_set_octet_string(p, qkd_privkey, QKD_KSID_SIZE))
+            !OSSL_PARAM_set_octet_string(p, qkd_privkey, QKD_KEY_SIZE))
             return -1;
     }
 

@@ -222,8 +222,19 @@ static int oqs_qkd_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
     ON_ERR_SET_GOTO(oqsx_key->comp_pubkey == NULL, ret, -4, err);
     ON_ERR_SET_GOTO(oqsx_key->comp_pubkey[keyslot] == NULL, ret, -5, err);
 
+    {
+        unsigned char *pubkey = (unsigned char *)oqsx_key->comp_pubkey[keyslot];
+        fprintf(stderr, "comp_pubkey[%d] (PQ index): ", keyslot);
+        for (size_t i = 0; i < QKD_KSID_SIZE; i++) {
+            fprintf(stderr, "%02x", pubkey[i]);
+        }
+        fprintf(stderr, "\n");
+    }
+
     // Now Bob's role: Use received key ID to get key
     QKD_DEBUG("BEFORE GETTING QKD KEY");
+
+    // print 
     if (!oqsx_key->qkd_ctx->is_initiator) {
         QKD_DEBUG("GETTING QKD KEY");
         ret = oqs_qkd_get_encaps_key(oqsx_key->qkd_ctx, 
@@ -313,6 +324,26 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
 
     // Check for NULL public key components directly in qkdkemctx
     ON_ERR_SET_GOTO(oqsx_key->comp_pubkey == NULL, ret, OQS_ERROR, err);
+
+    if (oqsx_key && oqsx_key->comp_pubkey && oqsx_key->comp_pubkey[idx_pq]) {
+        size_t pq_pubkey_len = oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key;
+        unsigned char *pq_pub = (unsigned char *)oqsx_key->comp_pubkey[idx_pq];
+        QKD_DEBUG("__________PQC public key (keyslot %d, %zu bytes):", idx_pq, pq_pubkey_len);
+        for (size_t i = 0; i < pq_pubkey_len; i++) {
+            printf("%02x", pq_pub[i]);
+        }
+        printf("\n");
+    }
+
+    if (oqsx_key && oqsx_key->comp_pubkey && oqsx_key->comp_pubkey[idx_qkd]) {
+        size_t qkd_pubkey_len = QKD_KSID_SIZE;
+        unsigned char *qkd_pub = (unsigned char *)oqsx_key->comp_pubkey[idx_qkd];
+        QKD_DEBUG("__________QKD public key (keyslot %d, %zu bytes):", idx_qkd, qkd_pubkey_len);
+        for (size_t i = 0; i < qkd_pubkey_len; i++) {
+            printf("%02x", qkd_pub[i]);
+        }
+        printf("\n");
+    }
 
     QKD_DEBUG("ENCAPS: pq index: %d, qkd index: %d", idx_pq, idx_qkd);
     QKD_DEBUG("DECAPS: BEFORE GETTING QKD KEY");
@@ -429,6 +460,16 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
     ret = oqs_qs_kem_decaps_keyslot(vpkemctx, NULL, &secretLenPQ, NULL, 0,
                                     idx_pq);
     ON_ERR_SET_GOTO(ret <= 0, ret, OQS_ERROR, err);
+
+    if (oqsx_key && oqsx_key->comp_pubkey && oqsx_key->comp_pubkey[idx_pq]) {
+        size_t pq_pubkey_len = oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key;
+        unsigned char *pq_pub = (unsigned char *)oqsx_key->comp_pubkey[idx_pq];
+        QKD_DEBUG("__________PQC public key (keyslot %d, %zu bytes):", idx_pq, pq_pubkey_len);
+        for (size_t i = 0; i < pq_pubkey_len; i++) {
+            printf("%02x", pq_pub[i]);
+        }
+        printf("\n");
+    }
 
     QKD_DEBUG("After firs decaps_keyslot call");
 
