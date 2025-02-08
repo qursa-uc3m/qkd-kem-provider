@@ -5,7 +5,7 @@
 /*
  * oqs_qkd_kem.c
  */
-
+#include <openssl/err.h>
 #include "oqs_qkd_kem.h"
 #include <qkd-etsi-api/qkd_etsi_api.h>
 #ifdef ETSI_004_API
@@ -122,6 +122,53 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
         ret = OQS_ERROR;
         goto err;
     }
+
+    // Extract key from EVP_PKEY
+    if (ctx->key) {
+        size_t keylen = 0;
+        unsigned char *raw_key = NULL;
+
+        if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) > 0) {
+            if (keylen != QKD_KEY_SIZE) {
+                QKD_DEBUG("Invalid QKD key length: %zu", keylen);
+                ret = OQS_ERROR;
+                goto err;
+            }
+            raw_key = OPENSSL_malloc(keylen);
+            if (raw_key) {
+                if (EVP_PKEY_get_raw_private_key(ctx->key, raw_key, &keylen) > 0) {
+                    // Verify key is not all zeros
+                    int is_zero = 1;
+                    for (size_t i = 0; i < keylen; i++) {
+                        if (raw_key[i] != 0) {
+                            is_zero = 0;
+                            break;
+                        }
+                    }
+                    if (!is_zero) {
+                        memcpy(key_out, raw_key, QKD_KEY_SIZE);
+                    } else {
+                        QKD_DEBUG("Error: Retrieved zero QKD key");
+                        ret = OQS_ERROR;
+                    }
+                } else {
+                    QKD_DEBUG("Failed to extract raw key material");
+                    ret = OQS_ERROR;
+                }
+                OPENSSL_clear_free(raw_key, keylen);
+            } else {
+                QKD_DEBUG("Failed to allocate memory for raw key");
+                ret = OQS_ERROR;
+            }
+        } else {
+            QKD_DEBUG("Failed to get key length");
+            ret = OQS_ERROR;
+        }
+    } else {
+        QKD_DEBUG("No QKD key available");
+        ret = OQS_ERROR;
+    }
+
 #elif defined(ETSI_014_API)
     memcpy(ctx->key_id, key_id_in, QKD_KSID_SIZE);
     if (!qkd_get_key_with_ids(ctx)) {
@@ -129,8 +176,61 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
         ret = OQS_ERROR;
         goto err;
     }
+
+    // Extract and validate key from EVP_PKEY
+    if (ctx->key) {
+        size_t keylen = 0;
+        unsigned char *raw_key = NULL;
+
+        if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) > 0) {
+            if (keylen != QKD_KEY_SIZE) {
+                QKD_DEBUG("Invalid QKD key length: %zu", keylen);
+                ret = OQS_ERROR;
+                goto err;
+            }
+            raw_key = OPENSSL_malloc(keylen);
+            if (raw_key) {
+                if (EVP_PKEY_get_raw_private_key(ctx->key, raw_key, &keylen) > 0) {
+                    // Verify key is not all zeros
+                    int is_zero = 1;
+                    for (size_t i = 0; i < keylen; i++) {
+                        if (raw_key[i] != 0) {
+                            is_zero = 0;
+                            break;
+                        }
+                    }
+                    if (!is_zero) {
+                        memcpy(key_out, raw_key, QKD_KEY_SIZE);
+                        #if !defined(NDEBUG) && defined(DEBUG_QKD)
+                        QKD_DEBUG("Retrieved QKD key material:");
+                        for (size_t i = 0; i < keylen; i++) {
+                            fprintf(stderr, "%02x", raw_key[i]);
+                        }
+                        fprintf(stderr, "\n");
+                        #endif
+                    } else {
+                        QKD_DEBUG("Error: Retrieved zero QKD key");
+                        ret = OQS_ERROR;
+                    }
+                } else {
+                    QKD_DEBUG("Failed to extract raw key material");
+                    ret = OQS_ERROR;
+                }
+                OPENSSL_clear_free(raw_key, keylen);
+            } else {
+                QKD_DEBUG("Failed to allocate memory for raw key");
+                ret = OQS_ERROR;
+            }
+        } else {
+            QKD_DEBUG("Failed to get key length");
+            ret = OQS_ERROR;
+        }
+    } else {
+        QKD_DEBUG("No QKD key available");
+        ret = OQS_ERROR;
+    }
 #endif
-    memcpy(key_out, ctx->key, QKD_KEY_SIZE);
+
     return ret;
 err:
     return ret;
@@ -152,25 +252,97 @@ static int oqs_qkd_get_decaps_key(OQSX_KEY *oqsx_key, unsigned char *key_out, in
         ret = OQS_ERROR;
         goto err;
     }
-    memcpy(key_out, ctx->key, QKD_KEY_SIZE);
+
+    // Extract and validate key from EVP_PKEY
+    if (ctx->key) {
+        size_t keylen = 0;
+        unsigned char *raw_key = NULL;
+
+        if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) > 0) {
+            if (keylen != QKD_KEY_SIZE) {
+                QKD_DEBUG("Invalid QKD key length: %zu", keylen);
+                ret = OQS_ERROR;
+                goto err;
+            }
+            raw_key = OPENSSL_malloc(keylen);
+            if (raw_key) {
+                if (EVP_PKEY_get_raw_private_key(ctx->key, raw_key, &keylen) > 0) {
+                    // Verify key is not all zeros
+                    int is_zero = 1;
+                    for (size_t i = 0; i < keylen; i++) {
+                        if (raw_key[i] != 0) {
+                            is_zero = 0;
+                            break;
+                        }
+                    }
+                    if (!is_zero) {
+                        memcpy(key_out, raw_key, QKD_KEY_SIZE);
+                        #if !defined(NDEBUG) && defined(DEBUG_QKD)
+                        QKD_DEBUG("Retrieved QKD key material in ETSI004 mode:");
+                        for (size_t i = 0; i < keylen; i++) {
+                            fprintf(stderr, "%02x", raw_key[i]);
+                        }
+                        fprintf(stderr, "\n");
+                        #endif
+                    } else {
+                        QKD_DEBUG("Error: Retrieved zero QKD key");
+                        ret = OQS_ERROR;
+                    }
+                } else {
+                    QKD_DEBUG("Failed to extract raw key material");
+                    ret = OQS_ERROR;
+                }
+                OPENSSL_clear_free(raw_key, keylen);
+            } else {
+                QKD_DEBUG("Failed to allocate memory for raw key");
+                ret = OQS_ERROR;
+            }
+        } else {
+            QKD_DEBUG("Failed to get key length");
+            ret = OQS_ERROR;
+        }
+    } else {
+        QKD_DEBUG("No QKD key available");
+        ret = OQS_ERROR;
+    }
+
 #elif defined(ETSI_014_API)
     // Validate private key component exists
     ON_ERR_SET_GOTO(!oqsx_key->comp_privkey, ret, OQS_ERROR, err);
     ON_ERR_SET_GOTO(!oqsx_key->comp_privkey[idx_qkd], ret, OQS_ERROR, err);
 
+    // Verify the stored key is not all zeros
+    unsigned char *stored_key = oqsx_key->comp_privkey[idx_qkd];
+    int is_zero = 1;
+    for (size_t i = 0; i < QKD_KEY_SIZE; i++) {
+        if (stored_key[i] != 0) {
+            is_zero = 0;
+            break;
+        }
+    }
+    if (is_zero) {
+        QKD_DEBUG("Error: Stored QKD key is zero");
+        ret = OQS_ERROR;
+        goto err;
+    }
+
     // Copy the stored key from private key component
     memcpy(key_out, oqsx_key->comp_privkey[idx_qkd], QKD_KEY_SIZE);
-#endif
-#if !defined(NDEBUG) && defined(DEBUG_QKD)
-    printf("DECAPS: Using stored QKD key from private key component (%d bytes): ", QKD_KEY_SIZE);
+
+    #if !defined(NDEBUG) && defined(DEBUG_QKD)
+    QKD_DEBUG("DECAPS: Using stored QKD key from private key component (%d bytes): ", QKD_KEY_SIZE);
     for (size_t i = 0; i < QKD_KEY_SIZE; i++) {
-        printf("%02x", key_out[i]);
+        fprintf(stderr, "%02x", key_out[i]);
     }
-    printf("\n");
+    fprintf(stderr, "\n");
+    #endif
 #endif
 
     return ret;
 err:
+    if (key_out) {
+        OPENSSL_secure_clear_free(key_out, QKD_KEY_SIZE);
+    }
     return ret;
 }
 
@@ -223,12 +395,14 @@ static int oqs_qkd_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
     ON_ERR_SET_GOTO(oqsx_key->comp_pubkey[keyslot] == NULL, ret, -5, err);
 
     {
+    #if !defined(NDEBUG) && defined(DEBUG_QKD)
         unsigned char *pubkey = (unsigned char *)oqsx_key->comp_pubkey[keyslot];
-        fprintf(stderr, "comp_pubkey[%d] (PQ index): ", keyslot);
+        fprintf(stderr, "comp_pubkey[%d] (QKD index): ", keyslot);
         for (size_t i = 0; i < QKD_KSID_SIZE; i++) {
             fprintf(stderr, "%02x", pubkey[i]);
         }
         fprintf(stderr, "\n");
+    #endif
     }
 
     // Now Bob's role: Use received key ID to get key
@@ -329,9 +503,9 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
         size_t pq_pubkey_len = oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key;
         unsigned char *pq_pub = (unsigned char *)oqsx_key->comp_pubkey[idx_pq];
         QKD_DEBUG("__________PQC public key (keyslot %d, %zu bytes):", idx_pq, pq_pubkey_len);
-        for (size_t i = 0; i < pq_pubkey_len; i++) {
-            printf("%02x", pq_pub[i]);
-        }
+        //for (size_t i = 0; i < pq_pubkey_len; i++) {
+        //    printf("%02x", pq_pub[i]);
+        //}
         printf("\n");
     }
 
@@ -339,10 +513,12 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
         size_t qkd_pubkey_len = QKD_KSID_SIZE;
         unsigned char *qkd_pub = (unsigned char *)oqsx_key->comp_pubkey[idx_qkd];
         QKD_DEBUG("__________QKD public key (keyslot %d, %zu bytes):", idx_qkd, qkd_pubkey_len);
+        #if !defined(NDEBUG) && defined(DEBUG_QKD)
         for (size_t i = 0; i < qkd_pubkey_len; i++) {
             printf("%02x", qkd_pub[i]);
         }
         printf("\n");
+        #endif
     }
 
     QKD_DEBUG("ENCAPS: pq index: %d, qkd index: %d", idx_pq, idx_qkd);
@@ -465,9 +641,9 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
         size_t pq_pubkey_len = oqsx_key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key;
         unsigned char *pq_pub = (unsigned char *)oqsx_key->comp_pubkey[idx_pq];
         QKD_DEBUG("__________PQC public key (keyslot %d, %zu bytes):", idx_pq, pq_pubkey_len);
-        for (size_t i = 0; i < pq_pubkey_len; i++) {
-            printf("%02x", pq_pub[i]);
-        }
+        //for (size_t i = 0; i < pq_pubkey_len; i++) {
+        //    printf("%02x", pq_pub[i]);
+        //}
         printf("\n");
     }
 

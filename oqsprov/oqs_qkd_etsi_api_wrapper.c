@@ -140,7 +140,7 @@ static unsigned char *base64_decode(const char *in, size_t *outlen) {
 
 bool qkd_get_status(QKD_CTX *ctx) {
 
-    fprintf(stderr, "[DEBUG TEST] qkd_get_status is executing!\n");
+    DEBUG_QKD("[DEBUG TEST] qkd_get_status is executing!\n");
 
     if (!ctx || !ctx->source_uri || !ctx->sae_id) {
         QKD_DEBUG("ETSI014: Invalid ctx or missing KME/SAE info");
@@ -195,6 +195,10 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
     //key_ids.key_IDs[0].key_ID = strdup(hex_key_id);
     //key_ids.key_IDs[0].key_ID = strdup((char *)ctx->key_id);
 
+#ifdef QKD_USE_QUKAYDEE
+    QKD_DEBUG("ETSI014: Using QuKayDee Backend ... Tailoring key ID formats");
+#endif
+
     // Convert binary UUID back to string format for API
     char uuid_str[37];  // 36 chars + null terminator
     decode_UUID(ctx->key_id, uuid_str);
@@ -219,36 +223,66 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
     free(key_ids.key_IDs[0].key_ID);
     free(key_ids.key_IDs);
 
-    if (ret == QKD_STATUS_OK && container.key_count > 0) {
-        QKD_DEBUG("ETSI014: Got %d keys from KME using key IDs", container.key_count);
-
-        qkd_key_t *first_key = &container.keys[0];
-        if (!first_key->key) {
-            QKD_DEBUG("ETSI014: No key data returned");
-            return false;
-        }
-
-        size_t outlen;
-        unsigned char *decoded_key = base64_decode(first_key->key, &outlen);
-        if (!decoded_key) {
-            QKD_DEBUG("ETSI014: Base64 decode failed");
-            return false;
-        }
-
-        ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, decoded_key, outlen);
-        free(decoded_key);
-
-        if (!ctx->key) {
-            QKD_DEBUG("ETSI014: EVP_PKEY_new_raw_private_key failed");
-            return false;
-        }
-
-        QKD_DEBUG("ETSI014: Key successfully retrieved by key IDs and stored");
-        return true;
-    } else {
-        QKD_DEBUG("ETSI014: GET_KEY_WITH_IDS call failed: ret=%u or no keys returned", ret);
+    // Check the result and key_count
+    if (ret != QKD_STATUS_OK) {
+        QKD_DEBUG("ETSI014: GET_KEY_WITH_IDS call failed, ret=%u", ret);
         return false;
     }
+    if (container.key_count == 0) {
+        QKD_DEBUG("ETSI014: GET_KEY_WITH_IDS returned zero keys");
+        return false;
+    }
+
+    // We only grab the first key
+    qkd_key_t *first_key = &container.keys[0];
+    if (!first_key->key) {
+        QKD_DEBUG("ETSI014: No key data returned in the first key");
+        return false;
+    }
+
+    QKD_DEBUG("ETSI014: Base64-decoding returned key");
+
+    // Base64 decode the key material
+    size_t outlen = 0;
+    unsigned char *decoded_key = base64_decode(first_key->key, &outlen);
+    if (!decoded_key) {
+        QKD_DEBUG("ETSI014: Base64 decode failed");
+        return false;
+    }
+
+    // Validate the decoded key length for X25519 (should be 32 bytes typically)
+    if (outlen != 32) {
+        QKD_DEBUG("ETSI014: Decoded key length [%zu] is invalid for X25519", outlen);
+        OPENSSL_cleanse(decoded_key, outlen);
+        free(decoded_key);
+        return false;
+    }
+
+    // Clean up previously stored key if present
+    if (ctx->key) {
+        QKD_DEBUG("ETSI014: Freeing previously stored EVP_PKEY");
+        EVP_PKEY_free(ctx->key);
+        ctx->key = NULL;
+    }
+
+    // Create the EVP_PKEY with the decoded key material
+    EVP_PKEY *temp_pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, decoded_key, outlen);
+    if (!temp_pkey) {
+        QKD_DEBUG("ETSI014: EVP_PKEY_new_raw_private_key failed");
+        OPENSSL_cleanse(decoded_key, outlen);
+        free(decoded_key);
+        return false;
+    }
+
+    // Wipe the decoded buffer from memory once we've used it
+    OPENSSL_cleanse(decoded_key, outlen);
+    free(decoded_key);
+
+    // Store the newly created key in the context
+    ctx->key = temp_pkey;
+
+    QKD_DEBUG("ETSI014: Key successfully retrieved by key IDs and stored");
+    return true;
 }
 
 #endif /* ETSI_014_API */
@@ -297,13 +331,15 @@ bool qkd_get_key(QKD_CTX *ctx) {
     qkd_key_container_t container;
     memset(&container, 0, sizeof(container));
     
-    QKD_DEBUG("ETSI014: Requesting key from KME with source=%s, dest=%s",
+    QKD_DEBUG("\nETSI014: Requesting key from KME with source=%s, dest=%s",
               ctx->source_uri, ctx->dest_uri);
     
     uint32_t ret = GET_KEY(ctx->master_kme, ctx->slave_sae, &req, &container);
-    QKD_DEBUG("ETSI014: GET_KEY returned %u", ret);
+    QKD_DEBUG("\nETSI014: GET_KEY returned %u", ret);
+
     char *alice_key_id = strdup(container.keys[0].key_ID);
     QKD_DEBUG("[SUCCESS]: ALICE got key with ID: %s\n", alice_key_id);
+    free(alice_key_id);
 
     if (ret == QKD_STATUS_OK && container.key_count > 0) {
         qkd_key_t *first_key = &container.keys[0];
@@ -313,16 +349,7 @@ bool qkd_get_key(QKD_CTX *ctx) {
         }
 
         // Store key ID if provided
-        //if (first_key->key_ID) {
-        //    unsigned char tmp_id;
-        //    for(int i = 0; i < QKD_KSID_SIZE; i++) {
-        //        sscanf(first_key->key_ID + (i * 2), "%02hhx", &tmp_id);
-        //        ctx->key_id[i] = tmp_id;
-        //    }
-        //}
-
         if (first_key->key_ID) {
-            // First store the original UUID for debugging
             QKD_DEBUG("ETSI014: Received key ID: %s", first_key->key_ID);
             
             // Convert UUID string to binary format for storage
@@ -333,16 +360,7 @@ bool qkd_get_key(QKD_CTX *ctx) {
             QKD_DEBUG("ETSI014: Successfully encoded UUID to binary");
         }
 
-        //#ifndef NDEBUG
-        // Extra debug line to print the binary key ID as a hex string:
-        //QKD_DEBUG("Stored key_id: ");
-        //for (int i = 0; i < 36; i++) {
-        //    fprintf(stderr, "%02X", ctx->key_id[i]);
-        //}
-        //fprintf(stderr, "\n");
-        //#endif
-
-        // Decode and store key
+        // Decode base64 key
         size_t outlen;
         unsigned char *decoded_key = base64_decode(first_key->key, &outlen);
         if (!decoded_key) {
@@ -359,9 +377,30 @@ bool qkd_get_key(QKD_CTX *ctx) {
         fprintf(stderr, "\n");
         #endif
 
+        // Check for zero key
+        int is_zero = 1;
+        for (size_t i = 0; i < outlen; i++) {
+            if (decoded_key[i] != 0) {
+                is_zero = 0;
+                break;
+            }
+        }
+        if (is_zero) {
+            QKD_DEBUG("ETSI014: Decoded key is all zeros");
+            OPENSSL_clear_free(decoded_key, outlen);
+            return false;
+        }
+
+        // Free previous key if it exists
+        if (ctx->key) {
+            EVP_PKEY_free(ctx->key);
+            ctx->key = NULL;
+        }
+
+        // Create new EVP_PKEY with the decoded key
         ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, 
                                                decoded_key, outlen);
-        free(decoded_key);
+        OPENSSL_clear_free(decoded_key, outlen);
 
         if (!ctx->key) {
             QKD_DEBUG("ETSI014: EVP_PKEY_new_raw_private_key failed");
@@ -374,5 +413,6 @@ bool qkd_get_key(QKD_CTX *ctx) {
 
     QKD_DEBUG("ETSI014: GET_KEY call failed: ret=%u or no keys returned", ret);
     return false;
+
 #endif
 }
