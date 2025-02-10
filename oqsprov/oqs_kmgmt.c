@@ -51,6 +51,7 @@ int oqsx_param_build_set_octet_string(OSSL_PARAM_BLD *bld, OSSL_PARAM *p,
         return OSSL_PARAM_BLD_push_octet_string(bld, key, data, data_len);
 
     p = OSSL_PARAM_locate(p, key);
+    QKD_DEBUG("OQSKEYMGMT: param_build_set_octet_string called\n");
     if (p != NULL)
         return OSSL_PARAM_set_octet_string(p, data, data_len);
     return 1;
@@ -186,7 +187,7 @@ static int oqsx_match(const void *keydata1, const void *keydata2,
     const OQSX_KEY *key1 = keydata1;
     const OQSX_KEY *key2 = keydata2;
     int ok = 1;
-
+    QKD_DEBUG("OQSKEYMGMT: match called\n");
     OQS_KM_PRINTF3("OQSKEYMGMT: match called for %p and %p\n", keydata1,
                    keydata2);
     OQS_KM_PRINTF2("OQSKEYMGMT: match called for selection %d\n", selection);
@@ -258,7 +259,7 @@ static int oqsx_import(void *keydata, int selection,
                        const OSSL_PARAM params[]) {
     OQSX_KEY *key = keydata;
     int ok = 0;
-
+    QKD_DEBUG("OQSKEYMGMT: import called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: import called \n");
     if (key == NULL) {
         ERR_raise(ERR_LIB_USER, OQSPROV_UNEXPECTED_NULL);
@@ -274,7 +275,7 @@ static int oqsx_import(void *keydata, int selection,
 int oqsx_key_to_params(const OQSX_KEY *key, OSSL_PARAM_BLD *tmpl,
                        OSSL_PARAM params[], int include_private) {
     int ret = 0;
-
+    QKD_DEBUG("OQSKEYMGMT: key_to_params called\n");
     if (key == NULL)
         return 0;
 
@@ -326,7 +327,7 @@ static int oqsx_export(void *keydata, int selection, OSSL_CALLBACK *param_cb,
     OSSL_PARAM *params = NULL;
     OSSL_PARAM *p;
     int ok = 1;
-
+    QKD_DEBUG("OQSKEYMGMT: export called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: export called\n");
 
     /*
@@ -393,6 +394,7 @@ static const OSSL_PARAM *oqs_imexport_types(int selection) {
 static int oqsx_key_is_hybrid(const OQSX_KEY *oqsxk) {
     if (!oqsxk)
         return 0;
+    QKD_DEBUG("OQSKEYMGMT: key_is_hybrid called\n");
     // TODO_QKD: handle this properly
     //  Check key type first
     int is_hybrid_type = (oqsxk->keytype == KEY_TYPE_QKD_HYB_KEM);
@@ -442,6 +444,8 @@ static int oqsx_get_hybrid_params(OQSX_KEY *key, OSSL_PARAM params[]) {
     int pq_pubkey_len = 0;
     int pq_privkey_len = 0;
     int idx_classic, idx_pq, idx_qkd;
+
+    QKD_DEBUG("OQSKEYMGMT: get_hybrid_params called\n");
 
     if (oqsx_key_is_hybrid(key) != 1)
         return 0;
@@ -546,7 +550,7 @@ static int oqsx_get_hybrid_params(OQSX_KEY *key, OSSL_PARAM params[]) {
 static int oqsx_get_params(void *key, OSSL_PARAM params[]) {
     OQSX_KEY *oqsxk = key;
     OSSL_PARAM *p;
-
+    QKD_DEBUG("OQSKEYMGMT: get_params called\n");
     if (oqsxk == NULL || params == NULL) {
         ERR_raise(ERR_LIB_USER, OQSPROV_R_WRONG_PARAMETERS);
         return 0;
@@ -580,9 +584,16 @@ static int oqsx_get_params(void *key, OSSL_PARAM params[]) {
         // hybrid KEMs are special in that the classic length information
         // shall not be passed out:
         // TODO_QKD: double check this
-        if (!OSSL_PARAM_set_octet_string(p, oqsxk->pubkey,
-                                            oqsxk->pubkeylen))
-            return 0;
+        if (oqsxk->keytype == KEY_TYPE_QKD_HYB_KEM) {
+            if (!OSSL_PARAM_set_octet_string(
+                    p, (char *)oqsxk->pubkey + SIZE_OF_UINT32,
+                    oqsxk->pubkeylen - SIZE_OF_UINT32))
+                return 0;
+        } else {
+            if (!OSSL_PARAM_set_octet_string(p, oqsxk->pubkey,
+                                             oqsxk->pubkeylen))
+                return 0;
+        }
     }
     if ((p = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_PUB_KEY)) != NULL) {
         if (!OSSL_PARAM_set_octet_string(p, oqsxk->pubkey, oqsxk->pubkeylen))
@@ -595,7 +606,7 @@ static int oqsx_get_params(void *key, OSSL_PARAM params[]) {
 
     if (oqsx_get_hybrid_params(oqsxk, params))
         return 0;
-
+    QKD_DEBUG("OQSKEYMGMT: get_params returning\n");
     // not passing in params to respond to is no error
     return 1;
 }
@@ -609,11 +620,13 @@ static const OSSL_PARAM oqsx_gettable_params[] = {
     OSSL_PARAM_END};
 
 static const OSSL_PARAM *oqs_gettable_params(void *provctx) {
+    QKD_DEBUG("OQSKEYMGMT: gettable_params called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: gettable_params called\n");
     return oqsx_gettable_params;
 }
 
 static int set_property_query(OQSX_KEY *oqsxkey, const char *propq) {
+    QKD_DEBUG("OQSKEYMGMT: property_query called\n");
     OPENSSL_free(oqsxkey->propq);
     oqsxkey->propq = NULL;
     OQS_KM_PRINTF("OQSKEYMGMT: property_query called\n");
@@ -630,7 +643,7 @@ static int set_property_query(OQSX_KEY *oqsxkey, const char *propq) {
 static int oqsx_set_params(void *key, const OSSL_PARAM params[]) {
     OQSX_KEY *oqsxkey = key;
     const OSSL_PARAM *p;
-
+    QKD_DEBUG("OQSKEYMGMT: set_params called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: set_params called\n");
     if (oqsxkey == NULL) {
         ERR_raise(ERR_LIB_USER, OQSPROV_R_WRONG_PARAMETERS);
@@ -667,6 +680,7 @@ static const OSSL_PARAM oqs_settable_params[] = {
     OSSL_PARAM_END};
 
 static const OSSL_PARAM *oqsx_settable_params(void *provctx) {
+    QKD_DEBUG("OQSKEYMGMT: settable_params called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: settable_params called\n");
     return oqs_settable_params;
 }
@@ -677,6 +691,7 @@ static void *oqsx_gen_init(void *provctx, int selection, char *oqs_name,
     OSSL_LIB_CTX *libctx = PROV_OQS_LIBCTX_OF(provctx);
     struct oqsx_gen_ctx *gctx = NULL;
 
+    QKD_DEBUG("OQSKEYMGMT: gen_init called\n");
     OQS_KM_PRINTF2("OQSKEYMGMT: gen_init called for key %s \n", oqs_name);
 
     if ((gctx = OPENSSL_zalloc(sizeof(*gctx))) != NULL) {
@@ -695,7 +710,7 @@ static void *oqsx_gen_init(void *provctx, int selection, char *oqs_name,
 
 static void *oqsx_genkey(struct oqsx_gen_ctx *gctx) {
     OQSX_KEY *key;
-
+    QKD_DEBUG("OQSKEYMGMT: oqsx_genkey() called\n");
     if (gctx == NULL)
         return NULL;
     OQS_KM_PRINTF3("OQSKEYMGMT: gen called for %s (%s)\n", gctx->oqs_name,
@@ -718,6 +733,7 @@ static void *oqsx_genkey(struct oqsx_gen_ctx *gctx) {
 static void *oqsx_gen(void *genctx, OSSL_CALLBACK *osslcb, void *cbarg) {
     struct oqsx_gen_ctx *gctx = genctx;
 
+    QKD_DEBUG("OQSKEYMGMT: gen called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: gen called\n");
 
     return oqsx_genkey(gctx);
@@ -725,7 +741,7 @@ static void *oqsx_gen(void *genctx, OSSL_CALLBACK *osslcb, void *cbarg) {
 
 static void oqsx_gen_cleanup(void *genctx) {
     struct oqsx_gen_ctx *gctx = genctx;
-
+    QKD_DEBUG("OQSKEYMGMT: gen_cleanup called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: gen_cleanup called\n");
     OPENSSL_free(gctx->oqs_name);
     OPENSSL_free(gctx->tls_name);
@@ -735,7 +751,7 @@ static void oqsx_gen_cleanup(void *genctx) {
 
 void *oqsx_load(const void *reference, size_t reference_sz) {
     OQSX_KEY *key = NULL;
-
+    QKD_DEBUG("OQSKEYMGMT: load called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: load called\n");
     if (reference_sz == sizeof(key)) {
         /* The contents of the reference is the address to our object */
@@ -748,6 +764,7 @@ void *oqsx_load(const void *reference, size_t reference_sz) {
 }
 
 static const OSSL_PARAM *oqsx_gen_settable_params(void *provctx) {
+    QKD_DEBUG("OQSKEYMGMT: gen_settable_params called\n");
     static OSSL_PARAM settable[] = {
         OSSL_PARAM_utf8_string(OSSL_PKEY_PARAM_GROUP_NAME, NULL, 0),
         OSSL_PARAM_utf8_string(OSSL_KDF_PARAM_PROPERTIES, NULL, 0),
@@ -758,7 +775,8 @@ static const OSSL_PARAM *oqsx_gen_settable_params(void *provctx) {
 static int oqsx_gen_set_params(void *genctx, const OSSL_PARAM params[]) {
     struct oqsx_gen_ctx *gctx = genctx;
     const OSSL_PARAM *p;
-
+    
+    QKD_DEBUG("OQSKEYMGMT: gen_set_params called\n");
     OQS_KM_PRINTF("OQSKEYMGMT: gen_set_params called\n");
     if (gctx == NULL)
         return 0;
