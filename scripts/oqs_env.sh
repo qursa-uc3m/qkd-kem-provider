@@ -33,8 +33,8 @@ if [ "${QKD_BACKEND}" = "qukaydee" ]; then
     echo "Setting up QuKayDee environment:"
     
     # Certificate configuration
-    export QKD_MASTER_CA_CERT_PATH="${PROJECT_DIR}/qkd_certs/account-2507-server-ca-qukaydee-com.crt"
-    export QKD_SLAVE_CA_CERT_PATH="${PROJECT_DIR}/qkd_certs/account-2507-server-ca-qukaydee-com.crt"
+    export QKD_MASTER_CA_CERT_PATH="${PROJECT_DIR}/qkd_certs/account-${ACCOUNT_ID}-server-ca-qukaydee-com.crt"
+    export QKD_SLAVE_CA_CERT_PATH="${PROJECT_DIR}/qkd_certs/account-${ACCOUNT_ID}-server-ca-qukaydee-com.crt"
 
     export QKD_MASTER_CERT_PATH="${PROJECT_DIR}/qkd_certs/sae-1.crt"
     export QKD_MASTER_KEY_PATH="${PROJECT_DIR}/qkd_certs/sae-1.key"
