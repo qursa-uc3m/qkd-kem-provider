@@ -1420,7 +1420,7 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
     // Allocate memory for QKD components
     //TODO_QKD: this is the source of the QKD part of the public key not being set
     //key->comp_pubkey[idx_qkd] = OPENSSL_malloc(total_pub_size);
-    key->comp_privkey[idx_qkd] = OPENSSL_secure_malloc(total_priv_size);
+    //key->comp_privkey[idx_qkd] = OPENSSL_secure_malloc(total_priv_size);
 
     QKD_DEBUG("Pubkey pointer: %p, Privkey pointer: %p",
               key->comp_pubkey[idx_qkd],

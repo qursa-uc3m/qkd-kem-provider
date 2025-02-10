@@ -30,6 +30,10 @@ scripts/__pycache__
 
 # certificates
 *.pem
+*.crt
+*.key
+*.srl
+
 
 # Python
 __pycache__
