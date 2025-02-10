@@ -182,19 +182,6 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
         return false;
     }
 
-    // Convert binary key ID to hex string
-    //char hex_key_id[33]; // 16 bytes = 32 hex chars + null terminator
-    //for(int i = 0; i < 16; i++) {
-    //    sprintf(&hex_key_id[i*2], "%02X", ctx->key_id[i]);
-    //}
-    //hex_key_id[32] = '\0';
-
-    // Add debug to verify hex conversion
-    //QKD_DEBUG("ETSI014: Binary key ID converted to hex: %s", hex_key_id);
-
-    //key_ids.key_IDs[0].key_ID = strdup(hex_key_id);
-    //key_ids.key_IDs[0].key_ID = strdup((char *)ctx->key_id);
-
 #ifdef QKD_USE_QUKAYDEE
     QKD_DEBUG("ETSI014: Using QuKayDee Backend ... Tailoring key ID formats");
 #endif
@@ -348,6 +335,8 @@ bool qkd_get_key(QKD_CTX *ctx) {
             return false;
         }
 
+        QKD_DEBUG("ETSI014: Received key (base64): %s", first_key->key);
+
         // Store key ID if provided
         if (first_key->key_ID) {
             QKD_DEBUG("ETSI014: Received key ID: %s", first_key->key_ID);
@@ -368,14 +357,6 @@ bool qkd_get_key(QKD_CTX *ctx) {
             return false;
         }
 
-        #ifndef NDEBUG
-        QKD_DEBUG("Algorithm: X25519, outlen = %zu", outlen);
-        QKD_DEBUG("Decoded key (hex dump):");
-        for (size_t i = 0; i < outlen; i++) {
-            fprintf(stderr, "%02X ", decoded_key[i]);
-        }
-        fprintf(stderr, "\n");
-        #endif
 
         // Check for zero key
         int is_zero = 1;
@@ -385,6 +366,14 @@ bool qkd_get_key(QKD_CTX *ctx) {
                 break;
             }
         }
+
+        // Print the decoded key in hex
+        QKD_DEBUG("ETSI014: Decoded key (hex dump):");
+        for (size_t i = 0; i < outlen; i++) {
+            fprintf(stderr, "%02X ", decoded_key[i]);
+        }
+        fprintf(stderr, "\n");
+
         if (is_zero) {
             QKD_DEBUG("ETSI014: Decoded key is all zeros");
             OPENSSL_clear_free(decoded_key, outlen);

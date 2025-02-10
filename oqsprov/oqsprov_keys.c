@@ -1420,7 +1420,7 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
     // Allocate memory for QKD components
     //TODO_QKD: this is the source of the QKD part of the public key not being set
     //key->comp_pubkey[idx_qkd] = OPENSSL_malloc(total_pub_size);
-    //key->comp_privkey[idx_qkd] = OPENSSL_secure_malloc(total_priv_size);
+    key->comp_privkey[idx_qkd] = OPENSSL_secure_malloc(total_priv_size);
 
     QKD_DEBUG("Pubkey pointer: %p, Privkey pointer: %p",
               key->comp_pubkey[idx_qkd],
@@ -1468,6 +1468,15 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
             ret = QKD_ERR_PROTOCOL;
             goto err;
         }
+
+        memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
+
+        size_t raw_key_len = QKD_KEY_SIZE;
+        if (!EVP_PKEY_get_raw_private_key(qkd_ctx->key, key->comp_privkey[idx_qkd], &raw_key_len) ||
+            raw_key_len != QKD_KEY_SIZE) {
+            QKD_DEBUG("Failed to extract raw key material from EVP_PKEY");
+            return false;
+        }
     } else {
         // Server path - key retrieval and validation
         if (!qkd_ctx->key_id) {
@@ -1478,7 +1487,8 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
     }
 
     // Store key ID for both client and server using secure copy
-    memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
+    //memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
+
 
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
     QKD_DEBUG("=== QKD Operation Summary ===");
@@ -1489,22 +1499,6 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
         fprintf(stderr, "%02x", qkd_ctx->key_id[i]);
     }
     fprintf(stderr, "\n");
-    /*
-    if (qkd_ctx->key) {
-        size_t keylen = 0;
-        unsigned char *raw_key = NULL;
-        if (EVP_PKEY_get_raw_private_key(qkd_ctx->key, NULL, &keylen) > 0) {
-            raw_key = OPENSSL_malloc(keylen);
-            if (raw_key && EVP_PKEY_get_raw_private_key(qkd_ctx->key, raw_key, &keylen) > 0) {
-                QKD_DEBUG("Key Material (%zu bytes):", keylen);
-                for (size_t i = 0; i < keylen; i++) {
-                    fprintf(stderr, "%02x", raw_key[i]);
-                }
-                fprintf(stderr, "\n");
-            }
-            OPENSSL_clear_free(raw_key, keylen);
-        }
-    }*/
 #endif
 
     QKD_DEBUG("QKD key material processed successfully");
