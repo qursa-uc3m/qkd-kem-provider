@@ -654,10 +654,20 @@ static int oqsx_set_params(void *key, const OSSL_PARAM params[]) {
         size_t used_len;
         int classic_pubkey_len;
         // TODO_QKD: check if further adaptation is needed
-        if (p->data_size != oqsxkey->pubkeylen ||
-            !OSSL_PARAM_get_octet_string(p, &oqsxkey->pubkey,
-                                            oqsxkey->pubkeylen, &used_len)) {
-            return 0;
+        if (oqsxkey->keytype == KEY_TYPE_QKD_HYB_KEM) {
+            if (p->data_size != oqsxkey->pubkeylen - SIZE_OF_UINT32 ||
+                !OSSL_PARAM_get_octet_string(
+                    p, &oqsxkey->comp_pubkey[0],
+                    oqsxkey->pubkeylen - SIZE_OF_UINT32, &used_len)) {
+                return 0;
+            }
+        } else {
+            if (p->data_size != oqsxkey->pubkeylen ||
+                !OSSL_PARAM_get_octet_string(p, &oqsxkey->pubkey,
+                                             oqsxkey->pubkeylen, &used_len)) {
+                QKD_DEBUG("OQSKEYMGMT: set_params returning\n");
+                return 0;
+            }
         }
         OPENSSL_clear_free(oqsxkey->privkey, oqsxkey->privkeylen);
         oqsxkey->privkey = NULL;
@@ -669,7 +679,7 @@ static int oqsx_set_params(void *key, const OSSL_PARAM params[]) {
             return 0;
         }
     }
-
+    QKD_DEBUG("OQSKEYMGMT: set_params returning\n");
     // not passing in params to set is no error, just a no-op
     return 1;
 }

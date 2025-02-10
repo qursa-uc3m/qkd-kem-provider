@@ -124,6 +124,7 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
     }
 
     // Extract key from EVP_PKEY
+    /*
     if (ctx->key) {
         size_t keylen = 0;
         unsigned char *raw_key = NULL;
@@ -167,7 +168,7 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
     } else {
         QKD_DEBUG("No QKD key available");
         ret = OQS_ERROR;
-    }
+    }*/
 
 #elif defined(ETSI_014_API)
     memcpy(ctx->key_id, key_id_in, QKD_KSID_SIZE);
@@ -178,6 +179,7 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
     }
 
     // Extract and validate key from EVP_PKEY
+    /*
     if (ctx->key) {
         size_t keylen = 0;
         unsigned char *raw_key = NULL;
@@ -228,7 +230,7 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
     } else {
         QKD_DEBUG("No QKD key available");
         ret = OQS_ERROR;
-    }
+    }*/
 #endif
 
     return ret;
