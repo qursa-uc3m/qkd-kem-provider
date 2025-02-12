@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include <qkd-etsi-api/qkd_etsi_api.h>
 #ifdef ETSI_004_API
 #include <qkd-etsi-api/etsi004/api.h>
@@ -58,7 +57,8 @@ bool qkd_open(QKD_CTX *ctx) {
 
     QKD_DEBUG("%s", ctx->is_initiator ? "Initiator case" : "Responder case");
 
-    QKD_DEBUG("ETSI004: OPEN_CONNECT returned result=%u status=%u", result, status);
+    QKD_DEBUG("ETSI004: OPEN_CONNECT returned result=%u status=%u", result,
+              status);
 
     if (result == QKD_STATUS_SUCCESS ||
         result == QKD_STATUS_PEER_DISCONNECTED) {
@@ -70,7 +70,6 @@ bool qkd_open(QKD_CTX *ctx) {
     QKD_DEBUG("ETSI004: Connection failed");
     return false;
 }
-
 
 /* Close connection using ETSI API */
 bool qkd_close(QKD_CTX *ctx) {
@@ -121,7 +120,7 @@ static void decode_UUID(const unsigned char bin[16], char uuid_str[37]) {
 static unsigned char *base64_decode(const char *in, size_t *outlen) {
 
     BIO *b64 = BIO_new(BIO_f_base64());
-    BIO *bmem = BIO_new_mem_buf((void*)in, -1);
+    BIO *bmem = BIO_new_mem_buf((void *)in, -1);
     bmem = BIO_push(b64, bmem);
     BIO_set_flags(bmem, BIO_FLAGS_BASE64_NO_NL);
 
@@ -147,7 +146,7 @@ bool qkd_get_status(QKD_CTX *ctx) {
         return false;
     }
 
-    QKD_DEBUG("ETSI014: Requesting status from KME with hostname=%s, SAE=%s", 
+    QKD_DEBUG("ETSI014: Requesting status from KME with hostname=%s, SAE=%s",
               ctx->source_uri, ctx->sae_id);
 
     // Let API handle URL construction
@@ -156,8 +155,9 @@ bool qkd_get_status(QKD_CTX *ctx) {
     QKD_DEBUG("ETSI014: get_status returned %u", ret);
     if (ret == QKD_STATUS_OK) {
         QKD_DEBUG("ETSI014: Status received from KME");
-        QKD_DEBUG("ETSI014: Source KME ID: %s", 
-                 ctx->status.source_KME_ID ? ctx->status.source_KME_ID : "NULL");
+        QKD_DEBUG("ETSI014: Source KME ID: %s", ctx->status.source_KME_ID
+                                                    ? ctx->status.source_KME_ID
+                                                    : "NULL");
         return true;
     }
 
@@ -187,7 +187,7 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
 #endif
 
     // Convert binary UUID back to string format for API
-    char uuid_str[37];  // 36 chars + null terminator
+    char uuid_str[37]; // 36 chars + null terminator
     decode_UUID(ctx->key_id, uuid_str);
     QKD_DEBUG("ETSI014: Using key ID: %s", uuid_str);
     key_ids.key_IDs[0].key_ID = strdup(uuid_str);
@@ -200,12 +200,14 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
     qkd_key_container_t container;
     memset(&container, 0, sizeof(container));
 
-   // kme_hostname: Bob's KME (slave)
+    // kme_hostname: Bob's KME (slave)
     // master_sae_id: Alice's SAE ID (master who originally got the key)
-    QKD_DEBUG("ETSI014: Calling GET_KEY_WITH_IDS - KME: %s, Master SAE: %s, Key ID: %s",
+    QKD_DEBUG("ETSI014: Calling GET_KEY_WITH_IDS - KME: %s, Master SAE: %s, "
+              "Key ID: %s",
               ctx->slave_kme, ctx->master_sae, key_ids.key_IDs[0].key_ID);
 
-    uint32_t ret = GET_KEY_WITH_IDS(ctx->slave_kme, ctx->master_sae, &key_ids, &container);
+    uint32_t ret =
+        GET_KEY_WITH_IDS(ctx->slave_kme, ctx->master_sae, &key_ids, &container);
 
     free(key_ids.key_IDs[0].key_ID);
     free(key_ids.key_IDs);
@@ -239,7 +241,8 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
 
     // Validate the decoded key length for X25519 (should be 32 bytes typically)
     if (outlen != 32) {
-        QKD_DEBUG("ETSI014: Decoded key length [%zu] is invalid for X25519", outlen);
+        QKD_DEBUG("ETSI014: Decoded key length [%zu] is invalid for X25519",
+                  outlen);
         OPENSSL_cleanse(decoded_key, outlen);
         free(decoded_key);
         return false;
@@ -253,7 +256,8 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
     }
 
     // Create the EVP_PKEY with the decoded key material
-    EVP_PKEY *temp_pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, decoded_key, outlen);
+    EVP_PKEY *temp_pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL,
+                                                       decoded_key, outlen);
     if (!temp_pkey) {
         QKD_DEBUG("ETSI014: EVP_PKEY_new_raw_private_key failed");
         OPENSSL_cleanse(decoded_key, outlen);
@@ -286,13 +290,14 @@ bool qkd_get_key(QKD_CTX *ctx) {
     unsigned char key_buffer[QKD_KEY_SIZE];
 
     QKD_DEBUG("ETSI004: Getting key for stream ID");
-    uint32_t result = GET_KEY(ctx->key_id, &index, key_buffer, &ctx->metadata, &status);
+    uint32_t result =
+        GET_KEY(ctx->key_id, &index, key_buffer, &ctx->metadata, &status);
 
-    if (result == 0 && (status == QKD_STATUS_SUCCESS || 
-                       status == QKD_STATUS_PEER_DISCONNECTED)) {
+    if (result == 0 && (status == QKD_STATUS_SUCCESS ||
+                        status == QKD_STATUS_PEER_DISCONNECTED)) {
         // Convert key to EVP format
         ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL,
-                                               key_buffer, QKD_KEY_SIZE);
+                                                key_buffer, QKD_KEY_SIZE);
         if (!ctx->key) {
             QKD_DEBUG("ETSI004: EVP_PKEY conversion failed");
             return false;
@@ -300,7 +305,8 @@ bool qkd_get_key(QKD_CTX *ctx) {
         QKD_DEBUG("ETSI004: Key successfully generated");
         return true;
     }
-    QKD_DEBUG("ETSI004: Key generation failed: result=%u status=%u", result, status);
+    QKD_DEBUG("ETSI004: Key generation failed: result=%u status=%u", result,
+              status);
     return false;
 
 #elif defined(ETSI_014_API)
@@ -317,10 +323,10 @@ bool qkd_get_key(QKD_CTX *ctx) {
 
     qkd_key_container_t container;
     memset(&container, 0, sizeof(container));
-    
+
     QKD_DEBUG("\nETSI014: Requesting key from KME with source=%s, dest=%s",
               ctx->source_uri, ctx->dest_uri);
-    
+
     uint32_t ret = GET_KEY(ctx->master_kme, ctx->slave_sae, &req, &container);
     QKD_DEBUG("\nETSI014: GET_KEY returned %u", ret);
 
@@ -335,12 +341,10 @@ bool qkd_get_key(QKD_CTX *ctx) {
             return false;
         }
 
-        QKD_DEBUG("ETSI014: Received key (base64): %s", first_key->key);
-
         // Store key ID if provided
         if (first_key->key_ID) {
             QKD_DEBUG("ETSI014: Received key ID: %s", first_key->key_ID);
-            
+
             // Convert UUID string to binary format for storage
             if (encode_UUID(first_key->key_ID, ctx->key_id) != 0) {
                 QKD_DEBUG("ETSI014: Failed to encode UUID");
@@ -356,7 +360,6 @@ bool qkd_get_key(QKD_CTX *ctx) {
             QKD_DEBUG("ETSI014: Base64 decode failed");
             return false;
         }
-
 
         // Check for zero key
         int is_zero = 1;
@@ -387,8 +390,8 @@ bool qkd_get_key(QKD_CTX *ctx) {
         }
 
         // Create new EVP_PKEY with the decoded key
-        ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL, 
-                                               decoded_key, outlen);
+        ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL,
+                                                decoded_key, outlen);
         OPENSSL_clear_free(decoded_key, outlen);
 
         if (!ctx->key) {

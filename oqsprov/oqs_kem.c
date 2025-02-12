@@ -120,8 +120,7 @@ static int oqs_qs_kem_encaps_keyslot(void *vpkemctx, unsigned char *out,
         *outlen = kem_ctx->length_ciphertext;
         *secretlen = kem_ctx->length_shared_secret;
         QKD_DEBUG("KEM returning lengths %ld and %ld\n",
-                        kem_ctx->length_ciphertext,
-                        kem_ctx->length_shared_secret);
+                  kem_ctx->length_ciphertext, kem_ctx->length_shared_secret);
         return 1;
     }
 
@@ -163,8 +162,7 @@ static int oqs_qs_kem_decaps_keyslot(void *vpkemctx, unsigned char *out,
         if (outlen != NULL) {
             *outlen = kem_ctx->length_shared_secret;
         }
-        QKD_DEBUG("KEM returning length %ld\n",
-                        kem_ctx->length_shared_secret);
+        QKD_DEBUG("KEM returning length %ld\n", kem_ctx->length_shared_secret);
         return 1;
     }
     if (inlen != kem_ctx->length_ciphertext) {

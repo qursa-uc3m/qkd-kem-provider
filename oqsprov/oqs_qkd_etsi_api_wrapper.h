@@ -14,10 +14,10 @@
 #define ETSI_014_API // or ETSI_014_API
 
 #include <openssl/evp.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <qkd-etsi-api/qkd_config.h>
 #include <qkd-etsi-api/qkd_etsi_api.h>
+#include <stdbool.h>
+#include <stdint.h>
 #ifdef ETSI_004_API
 #include <qkd-etsi-api/etsi004/api.h>
 #elif defined(ETSI_014_API)
@@ -34,13 +34,13 @@ typedef struct {
     char *source_uri;         // URI for source KME
     char *dest_uri;           // URI for destination KME
     char *master_kme;         // Master KME hostname from env
-    char *slave_kme;          // Slave KME hostname from env 
+    char *slave_kme;          // Slave KME hostname from env
     char *master_sae;         // Master SAE ID
     char *slave_sae;          // Slave SAE ID
     char *sae_id;             // SAE ID for this context
     EVP_PKEY *key;
     bool is_initiator;
-    //bool is_connected;
+    // bool is_connected;
 #ifdef ETSI_004_API
     struct qkd_qos_s qos;
     struct qkd_metadata_s metadata;

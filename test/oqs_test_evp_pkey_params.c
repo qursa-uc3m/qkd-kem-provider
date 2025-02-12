@@ -13,7 +13,6 @@
 #include "oqs_prov.h"
 #include "test_common.h"
 
-
 /** \brief List of QKD hybrid KEMs. */
 const char *kQKDHybridKEMAlgorithms[] = {
     "qkd_frodo640aes",

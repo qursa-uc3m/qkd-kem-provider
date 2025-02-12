@@ -71,7 +71,7 @@
 
 /* TODO_QKD: check if this is necessary. Optional: Add QKD-specific parameter
  * for key_id if needed */
-//#define OQS_HYBRID_PKEY_PARAM_QKD_KEY_ID "hybrid_qkd_key_id"
+// #define OQS_HYBRID_PKEY_PARAM_QKD_KEY_ID "hybrid_qkd_key_id"
 
 /* Extras for OQS extension */
 
@@ -229,8 +229,8 @@ int oqs_set_nid(char *tlsname, int nid);
 /* Create OQSX_KEY data structure based on parameters; key material allocated
  * separately */
 OQSX_KEY *qkd_kem_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
-                       int is_kem, const char *propq, int bit_security,
-                       int alg_idx, int reverse_share);
+                          int is_kem, const char *propq, int bit_security,
+                          int alg_idx, int reverse_share);
 
 /* allocate key material; component pointers need to be set separately */
 int oqsx_key_allocate_keymaterial(OQSX_KEY *key, int include_private);

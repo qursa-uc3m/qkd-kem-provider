@@ -9,11 +9,11 @@
 #ifndef OQS_QKD_CTX_H
 #define OQS_QKD_CTX_H
 
+#include "oqs_prov.h"
 #include <stdbool.h>
 #include <string.h>
-#include "oqs_prov.h"
 
-// QKD context initialization 
+// QKD context initialization
 int oqs_init_qkd_context(OQSX_KEY *key, bool is_initiator);
 
 #endif /* OQS_QKD_CTX_H */

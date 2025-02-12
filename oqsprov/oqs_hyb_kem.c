@@ -226,7 +226,8 @@ static int oqs_hyb_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
     for (size_t i = 0; i < secretLenPQ; i++) {
         printf("%02x", secretPQ[i]);
     }
-    printf("\nENCAPS: Classical Shared Secret (%zu bytes): ", secretLenClassical);
+    printf("\nENCAPS: Classical Shared Secret (%zu bytes): ",
+           secretLenClassical);
     for (size_t i = 0; i < secretLenClassical; i++) {
         printf("%02x", secretClassical[i]);
     }
@@ -306,7 +307,8 @@ static int oqs_hyb_kem_decaps(void *vpkemctx, unsigned char *secret,
     for (size_t i = 0; i < secretLenPQ; i++) {
         printf("%02x", secretPQ[i]);
     }
-    printf("\nDECAPS: Classical Shared Secret (%zu bytes): ", secretLenClassical);
+    printf("\nDECAPS: Classical Shared Secret (%zu bytes): ",
+           secretLenClassical);
     for (size_t i = 0; i < secretLenClassical; i++) {
         printf("%02x", secretClassical[i]);
     }

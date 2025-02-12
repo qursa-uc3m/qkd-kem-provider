@@ -8,7 +8,7 @@
  */
 #include "oqs_qkd_ctx.h"
 
-//#define DEBUG_QKD
+// #define DEBUG_QKD
 
 #ifdef NDEBUG
 #define OQS_KEY_PRINTF(a)
@@ -57,8 +57,8 @@ static int qkd_init_uris(QKD_CTX *ctx) {
     ctx->master_sae = OPENSSL_strdup(master_sae);
     ctx->slave_sae = OPENSSL_strdup(slave_sae);
 
-    if (!ctx->master_kme || !ctx->slave_kme || 
-        !ctx->master_sae || !ctx->slave_sae) {
+    if (!ctx->master_kme || !ctx->slave_kme || !ctx->master_sae ||
+        !ctx->slave_sae) {
         QKD_DEBUG("Failed to allocate KME or SAE strings");
         goto err;
     }
@@ -86,7 +86,7 @@ err:
     OPENSSL_free(ctx->master_sae);
     OPENSSL_free(ctx->slave_sae);
     ctx->master_kme = NULL;
-    ctx->slave_kme = NULL; 
+    ctx->slave_kme = NULL;
     ctx->master_sae = NULL;
     ctx->slave_sae = NULL;
     ctx->source_uri = NULL;
@@ -101,15 +101,15 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     QKD_DEBUG("Initializing QKD context");
 
     // Return success if context already exists and role matches
-     if (oqsx_key->qkd_ctx != NULL) {
-        #ifdef ETSI_014_API
-        #ifdef DEBUG_QKD
+    if (oqsx_key->qkd_ctx != NULL) {
+#ifdef ETSI_014_API
+#ifdef DEBUG_QKD
         if (!qkd_get_status(oqsx_key->qkd_ctx)) {
             QKD_DEBUG("Failed to get QKD status for existing context");
             return OQS_ERROR;
         }
-        #endif /* NDEBUG */
-        #endif
+#endif /* NDEBUG */
+#endif
 
         if (oqsx_key->qkd_ctx->is_initiator == is_initiator) {
             QKD_DEBUG("QKD context already initialized with correct role");
@@ -146,27 +146,27 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         return OQS_ERROR;
     }
 
-    #ifdef ETSI_014_API 
+#ifdef ETSI_014_API
     // After URIs are set, initialize ETSI014 specific fields and check status
     qkd_status_t *status = &oqsx_key->qkd_ctx->status;
     status->source_KME_ID = NULL;
     status->target_KME_ID = NULL;
     status->master_SAE_ID = NULL;
     status->slave_SAE_ID = NULL;
-    
-    // Initialize and validate status with KME
-    #ifdef DEBUG_QKD
+
+// Initialize and validate status with KME
+#ifdef DEBUG_QKD
     if (!qkd_get_status(oqsx_key->qkd_ctx)) {
         QKD_DEBUG("Failed to get initial QKD status");
         OPENSSL_free(oqsx_key->qkd_ctx);
         oqsx_key->qkd_ctx = NULL;
         return OQS_ERROR;
     }
-    #endif /* NDEBUG */
-    #endif
+#endif /* NDEBUG */
+#endif
 
-    // Open QKD connection
-    #ifdef ETSI_004_API
+// Open QKD connection
+#ifdef ETSI_004_API
     ret = qkd_open(oqsx_key->qkd_ctx);
     if (ret <= 0) {
         QKD_DEBUG("Failed to open QKD connection");
@@ -174,16 +174,16 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         oqsx_key->qkd_ctx = NULL;
         goto err;
     }
-    #elif defined(ETSI_014_API)
-    // Here we load the URIs from the environment variables and check the status
-    #ifdef DEBUG_QKD
+#elif defined(ETSI_014_API)
+// Here we load the URIs from the environment variables and check the status
+#ifdef DEBUG_QKD
     if (!qkd_get_status(oqsx_key->qkd_ctx)) {
         QKD_DEBUG("Failed to get QKD status for existing context");
         goto err;
     }
-    #endif /* NDEBUG */
+#endif /* NDEBUG */
     ret = OQS_SUCCESS;
-    #endif
+#endif
 
     QKD_DEBUG("QKD context initialized successfully as %s",
               is_initiator ? "initiator" : "responder");

@@ -534,20 +534,16 @@ static void oqsx_key_adjust(void *key, struct der2key_ctx_st *ctx) {
 #ifdef OQS_KEM_ENCODERS
 
 MAKE_DECODER(, "qkd_frodo640aes", qkd_frodo640aes, oqsx, PrivateKeyInfo);
-MAKE_DECODER(, "qkd_frodo640aes", qkd_frodo640aes, oqsx,
-             SubjectPublicKeyInfo);
+MAKE_DECODER(, "qkd_frodo640aes", qkd_frodo640aes, oqsx, SubjectPublicKeyInfo);
 
-MAKE_DECODER(, "qkd_frodo640shake", qkd_frodo640shake, oqsx,
-             PrivateKeyInfo);
+MAKE_DECODER(, "qkd_frodo640shake", qkd_frodo640shake, oqsx, PrivateKeyInfo);
 MAKE_DECODER(, "qkd_frodo640shake", qkd_frodo640shake, oqsx,
              SubjectPublicKeyInfo);
 
 MAKE_DECODER(, "qkd_frodo976aes", qkd_frodo976aes, oqsx, PrivateKeyInfo);
-MAKE_DECODER(, "qkd_frodo976aes", qkd_frodo976aes, oqsx,
-             SubjectPublicKeyInfo);
+MAKE_DECODER(, "qkd_frodo976aes", qkd_frodo976aes, oqsx, SubjectPublicKeyInfo);
 
-MAKE_DECODER(, "qkd_frodo976shake", qkd_frodo976shake, oqsx,
-             PrivateKeyInfo);
+MAKE_DECODER(, "qkd_frodo976shake", qkd_frodo976shake, oqsx, PrivateKeyInfo);
 MAKE_DECODER(, "qkd_frodo976shake", qkd_frodo976shake, oqsx,
              SubjectPublicKeyInfo);
 
@@ -555,8 +551,7 @@ MAKE_DECODER(, "qkd_frodo1344aes", qkd_frodo1344aes, oqsx, PrivateKeyInfo);
 MAKE_DECODER(, "qkd_frodo1344aes", qkd_frodo1344aes, oqsx,
              SubjectPublicKeyInfo);
 
-MAKE_DECODER(, "qkd_frodo1344shake", qkd_frodo1344shake, oqsx,
-             PrivateKeyInfo);
+MAKE_DECODER(, "qkd_frodo1344shake", qkd_frodo1344shake, oqsx, PrivateKeyInfo);
 MAKE_DECODER(, "qkd_frodo1344shake", qkd_frodo1344shake, oqsx,
              SubjectPublicKeyInfo);
 

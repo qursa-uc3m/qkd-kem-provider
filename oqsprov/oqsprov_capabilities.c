@@ -93,8 +93,7 @@ static const OSSL_PARAM oqs_param_group_list[][11] = {
     OQS_GROUP_ENTRY(qkd_frodo976aes, qkd_frodo976aes, qkd_frodo976aes, 2),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_976_shake
-    OQS_GROUP_ENTRY(qkd_frodo976shake, qkd_frodo976shake, qkd_frodo976shake,
-                    3),
+    OQS_GROUP_ENTRY(qkd_frodo976shake, qkd_frodo976shake, qkd_frodo976shake, 3),
 #endif
 #ifdef OQS_ENABLE_KEM_frodokem_1344_aes
     OQS_GROUP_ENTRY(qkd_frodo1344aes, qkd_frodo1344aes, qkd_frodo1344aes, 4),
@@ -162,11 +161,9 @@ int oqs_patch_codepoints() {
         oqs_group_list[6].group_id =
             atoi(getenv("OQS_CODEPOINT_QKD_FRODO1344SHAKE"));
     if (getenv("OQS_CODEPOINT_QKD_KYBER512"))
-        oqs_group_list[7].group_id =
-            atoi(getenv("OQS_CODEPOINT_QKD_KYBER512"));
+        oqs_group_list[7].group_id = atoi(getenv("OQS_CODEPOINT_QKD_KYBER512"));
     if (getenv("OQS_CODEPOINT_QKD_KYBER768"))
-        oqs_group_list[8].group_id =
-            atoi(getenv("OQS_CODEPOINT_QKD_KYBER768"));
+        oqs_group_list[8].group_id = atoi(getenv("OQS_CODEPOINT_QKD_KYBER768"));
     if (getenv("OQS_CODEPOINT_QKD_KYBER1024"))
         oqs_group_list[9].group_id =
             atoi(getenv("OQS_CODEPOINT_QKD_KYBER1024"));
