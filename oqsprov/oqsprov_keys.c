@@ -1122,7 +1122,7 @@ OQSX_KEY *qkd_kem_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
                     oqs_name);
             goto err;
         }
-
+#ifdef QKD_KEY_ID_CH
         // TODO_QKD: ensure this is never called for the responder
         if (oqs_init_qkd_context(ret, true) !=
             OQS_SUCCESS) { // Assume initiator by default
@@ -1136,7 +1136,7 @@ OQSX_KEY *qkd_kem_key_new(OSSL_LIB_CTX *libctx, char *oqs_name, char *tls_name,
             ret->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key,
             ret->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_ciphertext,
             ret->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_shared_secret);
-
+#endif
         // Allocate memory for composite keys
         ret->numkeys = 2; // QKD + PQ hybrid
         ret->comp_privkey = OPENSSL_malloc(ret->numkeys * sizeof(void *));
@@ -1349,6 +1349,7 @@ static int oqsx_key_gen_oqs(OQSX_KEY *key, int gen_kem) {
     }
 }
 
+#ifdef QKD_KEY_ID_CH
 static int oqsx_key_gen_qkd(OQSX_KEY *key) {
     int ret = OQS_SUCCESS;
     int idx_qkd;
@@ -1479,6 +1480,7 @@ err:
     }
     return ret;
 }
+#endif // QKD_KEY_ID_CH
 
 /* allocates OQS and classical keys */
 int oqsx_key_gen(OQSX_KEY *key) {
@@ -1517,14 +1519,14 @@ int oqsx_key_gen(OQSX_KEY *key) {
             ret = OQS_ERROR;
             goto err_gen;
         }
-
+#ifdef QKD_KEY_ID_CH
         // Then initialize QKD component:
         // - For ETSI 004: Get only key ID via OPEN_CONNECT (actual key
         // retrieved during decaps)
         // - For ETSI 014: Get both key ID and key via GET_KEY
         ret = oqsx_key_gen_qkd(key);
         ON_ERR_GOTO(ret != OQS_SUCCESS, err_gen);
-
+#endif
         if (key->keytype == KEY_TYPE_QKD_HYB_KEM && key->numkeys == 2) {
             int idx_pq = 0; // for PQC component in a PQC+QKD hybrid
             if (key->comp_pubkey && key->comp_pubkey[idx_pq]) {

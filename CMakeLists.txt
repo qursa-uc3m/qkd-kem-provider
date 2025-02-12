@@ -31,6 +31,12 @@ if(${OQS_KEM_ENCODERS})
     add_compile_definitions( OQS_KEM_ENCODERS )
 endif()
 
+option(QKD_KEY_ID_CH "Use channel-based key IDs" OFF)
+if(QKD_KEY_ID_CH)
+    add_compile_definitions(QKD_KEY_ID_CH)
+    message(STATUS "Building with channel-based key IDs")
+endif()
+
 option(NOPUBKEY_IN_PRIVKEY "Do not include public keys in private key structures/PKCS#8 " OFF)
 if(${NOPUBKEY_IN_PRIVKEY})
     message(STATUS "Build will not store public keys alongside private keys in PKCS#8 structures")

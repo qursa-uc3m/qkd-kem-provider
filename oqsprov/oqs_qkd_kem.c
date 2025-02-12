@@ -105,24 +105,31 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
     int ret = OQS_SUCCESS;
 
     QKD_DEBUG("Getting QKD key during encapsulation as responder");
+#ifdef QKD_KEY_ID_CH
     ON_ERR_SET_GOTO(!ctx || !key_id_in || !key_out, ret, OQS_ERROR, err);
+#else
+    ON_ERR_SET_GOTO(!ctx || !key_out, ret, OQS_ERROR, err);
+#endif
     ON_ERR_SET_GOTO(ctx->is_initiator, ret, OQS_ERROR, err);
 
+#ifdef QKD_KEY_ID_CH
+    /* --- Case 1: Key ID sent in client hello ---
+     * Use get_key_with_ids during encapsulation.
+     */
 #ifdef ETSI_004_API
-    // First establish session with received key ID
+    /* First establish session with received key ID */
     memcpy(ctx->key_id, key_id_in, QKD_KSID_SIZE);
     if (!qkd_open_connect(ctx)) {
         QKD_DEBUG("Failed to establish QKD session");
         ret = OQS_ERROR;
         goto err;
     }
-    // Then get the actual key
+    /* Then get the actual key */
     if (!qkd_get_key(ctx)) {
         QKD_DEBUG("Failed to get QKD key");
         ret = OQS_ERROR;
         goto err;
     }
-
 #elif defined(ETSI_014_API)
     memcpy(ctx->key_id, key_id_in, QKD_KSID_SIZE);
     if (!qkd_get_key_with_ids(ctx)) {
@@ -152,13 +159,56 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
         ret = OQS_ERROR;
         goto err;
     }
+#else
+    #error "ETSI API not defined"
 #endif
 
-    return ret;
+#else
+    /* --- Case 2: Key ID sent along with ciphertext/public key ---
+     * Use get_key during encapsulation.
+     * Here, key_id_in is not required.
+     */
+#ifdef ETSI_004_API
+    // TODO_QKD: implement
+    goto err;
+#elif defined(ETSI_014_API)
+    if (!qkd_get_key(ctx)) {
+        QKD_DEBUG("Failed to get QKD key (ETSI_014_API)");
+        ret = OQS_ERROR;
+        goto err;
+    }
+    if (ctx->key) {
+        size_t keylen = 0;
+        if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) <= 0) {
+            QKD_DEBUG("Failed to get key length");
+            ret = OQS_ERROR;
+            goto err;
+        }
+        if (keylen != QKD_KEY_SIZE) {
+            QKD_DEBUG("Unexpected key length: %zu", keylen);
+            ret = OQS_ERROR;
+            goto err;
+        }
+        if (EVP_PKEY_get_raw_private_key(ctx->key, key_out, &keylen) <= 0) {
+            QKD_DEBUG("Failed to extract raw key material");
+            ret = OQS_ERROR;
+            goto err;
+        }
+    } else {
+        QKD_DEBUG("No key available in context");
+        ret = OQS_ERROR;
+        goto err;
+    }
+#else
+    #error "ETSI API not defined"
+#endif // ETSI_004_API
+#endif // QKD_KEY_ID_CH
+
 err:
     return ret;
 }
 
+/* For key retrieval during decapsulation (Alice) */
 /* For key retrieval during decapsulation (Alice) */
 static int oqs_qkd_get_decaps_key(OQSX_KEY *oqsx_key, unsigned char *key_out,
                                   int idx_qkd) {
@@ -176,40 +226,52 @@ static int oqs_qkd_get_decaps_key(OQSX_KEY *oqsx_key, unsigned char *key_out,
         ret = OQS_ERROR;
         goto err;
     }
-
 #elif defined(ETSI_014_API)
-    // Validate private key component exists
-    ON_ERR_SET_GOTO(!oqsx_key->comp_privkey, ret, OQS_ERROR, err);
-    ON_ERR_SET_GOTO(!oqsx_key->comp_privkey[idx_qkd], ret, OQS_ERROR, err);
-
-    // Verify the stored key is not all zeros
-    /*
-    unsigned char *stored_key = oqsx_key->comp_privkey[idx_qkd];
-    int is_zero = 1;
-    for (size_t i = 0; i < QKD_KEY_SIZE; i++) {
-        if (stored_key[i] != 0) {
-            is_zero = 0;
-            break;
-        }
-    }
-    if (is_zero) {
-        QKD_DEBUG("Error: Stored QKD key is zero");
+#ifndef QKD_KEY_ID_CH
+    /* Non QKD_KEY_ID_CH: use get_key_with_ids to retrieve the key */
+    if (!qkd_get_key_with_ids(ctx)) {
+        QKD_DEBUG("Failed to get QKD key with ids");
         ret = OQS_ERROR;
         goto err;
-    }*/
-
-    // Copy the stored key from private key component
+    }
+    if (ctx->key) {
+        size_t keylen = 0;
+        if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) <= 0) {
+            QKD_DEBUG("Failed to get key length");
+            ret = OQS_ERROR;
+            goto err;
+        }
+        if (keylen != QKD_KEY_SIZE) {
+            QKD_DEBUG("Unexpected key length: %zu", keylen);
+            ret = OQS_ERROR;
+            goto err;
+        }
+        if (EVP_PKEY_get_raw_private_key(ctx->key, key_out, &keylen) <= 0) {
+            QKD_DEBUG("Failed to extract raw key material");
+            ret = OQS_ERROR;
+            goto err;
+        }
+    } else {
+        QKD_DEBUG("No key available in context");
+        ret = OQS_ERROR;
+        goto err;
+    }
+#else
+    /* QKD_KEY_ID_CH defined: use stored private key component */
+    ON_ERR_SET_GOTO(!oqsx_key->comp_privkey, ret, OQS_ERROR, err);
+    ON_ERR_SET_GOTO(!oqsx_key->comp_privkey[idx_qkd], ret, OQS_ERROR, err);
     memcpy(key_out, oqsx_key->comp_privkey[idx_qkd], QKD_KEY_SIZE);
 
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
-    QKD_DEBUG(
-        "DECAPS: Using stored QKD key from private key component (%d bytes): ",
-        QKD_KEY_SIZE);
+    QKD_DEBUG("DECAPS: Using stored QKD key from private key component (%d bytes): ", QKD_KEY_SIZE);
     for (size_t i = 0; i < QKD_KEY_SIZE; i++) {
         fprintf(stderr, "%02x", key_out[i]);
     }
     fprintf(stderr, "\n");
 #endif
+#endif
+#else
+    #error "ETSI API not defined"
 #endif
 
     return ret;
@@ -219,6 +281,7 @@ err:
     }
     return ret;
 }
+
 
 static int oqs_qkd_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
                                       size_t *ctlen, unsigned char *secret,
@@ -285,11 +348,16 @@ static int oqs_qkd_kem_encaps_keyslot(void *vpkemctx, unsigned char *ct,
     // Now Bob's role: Use received key ID to get key
     QKD_DEBUG("BEFORE GETTING QKD KEY");
 
-    // print
+    // Bob's role: retrieve QKD key using the proper method
     if (!oqsx_key->qkd_ctx->is_initiator) {
         QKD_DEBUG("GETTING QKD KEY");
+#ifdef QKD_KEY_ID_CH
         ret = oqs_qkd_get_encaps_key(oqsx_key->qkd_ctx,
-                                     oqsx_key->comp_pubkey[keyslot], secret);
+                                      oqsx_key->comp_pubkey[keyslot], secret);
+#else
+        ret = oqs_qkd_get_encaps_key(oqsx_key->qkd_ctx, NULL, secret);
+        memcpy(ct, oqsx_key->qkd_ctx->key_id, QKD_KSID_SIZE);
+#endif
     }
 
     return ret;
@@ -329,6 +397,12 @@ static int oqs_qkd_kem_decaps_keyslot(void *vpkemctx, unsigned char *secret,
     // Validate input parameters
     ON_ERR_SET_GOTO(ct == NULL, ret, -3, err);
     ON_ERR_SET_GOTO(ctlen != QKD_KSID_SIZE, ret, -4, err);
+
+#ifndef QKD_KEY_ID_CH
+    /* In the non QKD_KEY_ID_CH case the ciphertext contains the key ID.
+       Update the QKD context so that later retrieval uses this key ID. */
+    memcpy(oqsx_key->qkd_ctx->key_id, ct, QKD_KSID_SIZE);
+#endif
 
     // because Bob has already called OPEN_CONNECT and retrieved his key
     // Now Alice's role: Get key using established session
@@ -591,7 +665,7 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
     // TODO_QKD: check if we should use the ciphertext from the QKD part. Test
     // with TLS
     ret = oqs_qkd_kem_decaps_keyslot(vpkemctx, secretQKD, &secretLenQKD,
-                                     oqsx_key->comp_pubkey[idx_qkd],
+                                     ctQKD,
                                      QKD_KSID_SIZE, idx_qkd);
 #if !defined(NDEBUG) && defined(DEBUG_QKD)
     QKD_DEBUG("DECAPS: ret value: %d", ret);

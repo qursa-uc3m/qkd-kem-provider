@@ -69,12 +69,14 @@ To build the provider for the first time run
 
 ```bash
 export LIBOQS_BRANCH="0.12.0"
+export OQSPROV_CMAKE_PARAMS="-DQKD_KEY_ID_CH=OFF"
 ./scripts/fullbuild.sh -F
 ```
 
 and then just
 
 ```bash
+export OQSPROV_CMAKE_PARAMS="-DQKD_KEY_ID_CH=OFF"
 ./scripts/fullbuild.sh -f
 ```
 
