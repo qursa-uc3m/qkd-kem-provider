@@ -116,7 +116,7 @@ First, generate certificates (you need to have installed OpenSSL 3.0 and the oqs
 
 ```bash
 cd ./certs
-source ./set_openssl_env.sh
+source ./set_env.sh
 ./generate_certs.sh
 ```
 
