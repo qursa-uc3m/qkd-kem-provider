@@ -154,16 +154,14 @@ which is based in [open-quantum-safe/oqs-provider/scripts/test_tls_full.py](http
 ## Configuring the QuKayDee environment
 
 First, follow the instructions in the [QuKayDee](https://qukaydee.com/pages/getting_started) page. At some point, you will have to download the server's certificate. This will have a name of the form
+
 ```bash
 account-<ACCOUNT_ID>-server-ca-qukaydee-com.crt
 ```
 
 Use this ACCOUNT_ID number for configuring your environment. When you have configured the rest of the certificates (do not forget to upload the client's root certificate to the site), save them to a folder called ```qkd_certs``` in the root's directory. You can then configure the environment by running
+
 ```bash
 export QKD_BACKEND=qukaydee && export ACCOUNT_ID="<ACCOUNT_ID>"
 source ./oqs_env.sh
 ```
-
-
-
-
