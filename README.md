@@ -143,7 +143,7 @@ First, generate certificates (you need to have installed OpenSSL 3.0 and the oqs
 
 ```bash
 cd ./certs
-source ./set_openssl_env.sh
+source ./set_env.sh
 ./generate_certs.sh
 ```
 
@@ -152,14 +152,19 @@ Next, use `./scripts/oqs_env.sh` to set the environment variables to use the bui
 Then, in one terminal run the server
 
 ```bash
+source ./scripts/oqs_env.sh
+export IS_TLS_SERVER=1
 openssl s_server -cert <certs_dir>/rsa/rsa_2048_entity_cert.pem -key <certs_dir>/rsa/rsa_2048_entity_key.pem -www -tls1_3 -groups qkd_kyber768 -port 4433 -provider default -provider qkdkemprovider
 ```
 
 and in the other terminal run the client
 
 ```bash
+source ./scripts/oqs_env.sh
 openssl s_client -connect localhost:4433 -groups qkd_kyber768 -provider default -provider qkdkemprovider
 ```
+
+**Note**: the `IS_TLS_SERVER` variable is used to set the server mode (this is meant to avoid an unnecesary `get_key` call in the server side for ETSI 014 and `QKD_KEY_ID_CH=ON`).
 
 Notice that Wireshark won't be able to recognize the groups, so you will see
 
@@ -190,5 +195,5 @@ Use this ACCOUNT_ID number for configuring your environment. When you have confi
 
 ```bash
 export QKD_BACKEND=qukaydee && export ACCOUNT_ID="<ACCOUNT_ID>"
-source ./oqs_env.sh
+source ./scripts/oqs_env.sh
 ```

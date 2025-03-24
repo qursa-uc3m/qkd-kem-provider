@@ -55,5 +55,15 @@ if [ "${QKD_BACKEND}" = "qukaydee" ]; then
         echo "QKD_SLAVE_KME_HOSTNAME=$QKD_SLAVE_KME_HOSTNAME"
     fi
 else
-    echo "Using default QKD backend (simulated)"
+    echo "Using default QKD backend (simulated) with simulated URIs"
+    echo "Check if the URIS are being set correctly for your backend"
+    export QKD_MASTER_KME_HOSTNAME="http://simulated-master.kme.local"
+    export QKD_SLAVE_KME_HOSTNAME="http://simulated-slave.kme.local"
+    export QKD_MASTER_SAE="simulated-master-sae"
+    export QKD_SLAVE_SAE="simulated-slave-sae"
+    
+    echo "QKD_MASTER_KME_HOSTNAME=$QKD_MASTER_KME_HOSTNAME"
+    echo "QKD_SLAVE_KME_HOSTNAME=$QKD_SLAVE_KME_HOSTNAME"
+    echo "QKD_MASTER_SAE=$QKD_MASTER_SAE"
+    echo "QKD_SLAVE_SAE=$QKD_SLAVE_SAE"
 fi

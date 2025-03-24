@@ -372,10 +372,12 @@ bool qkd_get_key(QKD_CTX *ctx) {
 
         // Print the decoded key in hex
         QKD_DEBUG("ETSI014: Decoded key (hex dump):");
+    #if !defined(NDEBUG) && defined(DEBUG_QKD)
         for (size_t i = 0; i < outlen; i++) {
             fprintf(stderr, "%02X ", decoded_key[i]);
         }
         fprintf(stderr, "\n");
+    #endif
 
         if (is_zero) {
             QKD_DEBUG("ETSI014: Decoded key is all zeros");

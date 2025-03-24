@@ -460,7 +460,7 @@ int oqs_qkd_kem_encaps(void *vpkemctx, unsigned char *ct, size_t *ctlen,
         // for (size_t i = 0; i < pq_pubkey_len; i++) {
         //     printf("%02x", pq_pub[i]);
         // }
-        printf("\n");
+        //printf("\n");
     }
 
     if (oqsx_key && oqsx_key->comp_pubkey && oqsx_key->comp_pubkey[idx_qkd]) {
@@ -605,7 +605,7 @@ int oqs_qkd_kem_decaps(void *vpkemctx, unsigned char *secret, size_t *secretlen,
         // for (size_t i = 0; i < pq_pubkey_len; i++) {
         //     printf("%02x", pq_pub[i]);
         // }
-        printf("\n");
+        //printf("\n");
     }
 
     QKD_DEBUG("After firs decaps_keyslot call");
