@@ -1297,7 +1297,22 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
             ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_ENCODING);
             return 0;
         }
-        if (key->privkeylen != pp1->data_size) {
+        if (key->keytype == KEY_TYPE_QKD_HYB_KEM) {
+            // Calculate expected size for QKD hybrid private key
+            size_t expected_priv_len = 
+                key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key + 
+                QKD_KEY_SIZE; // PQ key + QKD key
+                
+            if (pp1->data_size != expected_priv_len && 
+                key->privkeylen != pp1->data_size) {
+                QKD_DEBUG("Private key size mismatch: got %zu, expected %zu or %zu",
+                          pp1->data_size, expected_priv_len, key->privkeylen);
+                ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
+                return 0;
+            }
+            // Update key length to match incoming data
+            key->privkeylen = pp1->data_size;
+        } else if (key->privkeylen != pp1->data_size) {
             ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
             return 0;
         }
@@ -1314,7 +1329,22 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
             OQS_KEY_PRINTF("invalid data type\n");
             return 0;
         }
-        if (key->pubkeylen != pp2->data_size) {
+        if (key->keytype == KEY_TYPE_QKD_HYB_KEM) {
+            // Calculate expected size for QKD hybrid public key
+            size_t expected_pub_len = 
+                key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key + 
+                QKD_KSID_SIZE; // PQ key + QKD key ID
+                
+            if (pp2->data_size != expected_pub_len && 
+                key->pubkeylen != pp2->data_size) {
+                QKD_DEBUG("Public key size mismatch: got %zu, expected %zu or %zu",
+                          pp2->data_size, expected_pub_len, key->pubkeylen);
+                ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
+                return 0;
+            }
+            // Update key length to match incoming data
+            key->pubkeylen = pp2->data_size;
+        } else if (key->pubkeylen != pp2->data_size) {
             ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
             return 0;
         }
@@ -1326,11 +1356,18 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
         }
         memcpy(key->pubkey, pp2->data, pp2->data_size);
     }
-    if (!oqsx_key_set_composites(key, classic_lengths_fixed) ||
-        !oqsx_key_recreate_classickey(
-            key, key->privkey != NULL ? KEY_OP_PRIVATE : KEY_OP_PUBLIC))
-        return 0;
-    return 1;
+    if (key->keytype == KEY_TYPE_QKD_HYB_KEM) {
+        if (!oqsx_key_set_composites(key, key->keytype == KEY_TYPE_QKD_HYB_KEM))
+            return 0;
+        return 1;
+
+    } else {
+        if (!oqsx_key_set_composites(key, classic_lengths_fixed) ||
+            !oqsx_key_recreate_classickey(
+                key, key->privkey != NULL ? KEY_OP_PRIVATE : KEY_OP_PUBLIC))
+            return 0;
+        return 1;
+    }
 }
 
 // OQS key always the last of the numkeys comp keys
