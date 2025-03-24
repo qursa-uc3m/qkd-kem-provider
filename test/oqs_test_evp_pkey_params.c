@@ -426,10 +426,11 @@ out:
 static int test_algorithm(OSSL_LIB_CTX *libctx, const char *algname) {
     EVP_PKEY_CTX *evp_pkey_ctx;
     EVP_PKEY *private_key;
-    struct KeyPair classical_keypair;
-    struct KeyPair pq_keypair;
-    struct KeyPair full_keypair;
+    struct KeyPair classical_keypair = {0};
+    struct KeyPair pq_keypair = {0};
+    struct KeyPair full_keypair = {0};
     int ret = -1;
+    int is_qkd_hybrid = is_kem_algorithm_qkd_hybrid(algname);
 
     if (!(evp_pkey_ctx = init_EVP_PKEY_CTX(libctx, algname))) {
         goto out;
@@ -443,24 +444,47 @@ static int test_algorithm(OSSL_LIB_CTX *libctx, const char *algname) {
         goto free_evp_pkey_ctx;
     }
 
-    if (private_key_params_get_classical_keys(private_key,
-                                              &classical_keypair)) {
-        goto free_private_key;
-    }
+    if (is_qkd_hybrid) {
+        // For QKD hybrids, skip the classical key extraction
+        if (private_key_params_get_pq_keys(private_key, &pq_keypair)) {
+            goto free_private_key;
+        }
 
-    if (private_key_params_get_pq_keys(private_key, &pq_keypair)) {
-        goto free_classical_keypair;
-    }
+        if (private_key_params_get_full_keys(private_key, &full_keypair)) {
+            goto free_pq_keypair;
+        }
 
-    if (private_key_params_get_full_keys(private_key, &full_keypair)) {
-        goto free_pq_keypair;
-    }
-
-    if (!keypairs_verify_consistency(&classical_keypair, &pq_keypair,
-                                     &full_keypair)) {
+        // For QKD hybrids, consider the test successful without classical verification
         ret = 0;
+    } else {
+        // For non-QKD hybrids, extract classical, PQ, and full keys
+        if (private_key_params_get_classical_keys(private_key, &classical_keypair)) {
+            goto free_private_key;
+        }
+
+        if (private_key_params_get_pq_keys(private_key, &pq_keypair)) {
+            goto free_classical_keypair;
+        }
+
+        if (private_key_params_get_full_keys(private_key, &full_keypair)) {
+            goto free_pq_keypair;
+        }
+
+        // Verify consistency for non-QKD hybrids
+        if (!keypairs_verify_consistency(&classical_keypair, &pq_keypair, &full_keypair)) {
+            ret = 0;
+        }
+
+        goto cleanup;  // Skip to cleanup to handle all freeing
     }
 
+    // Free resources for QKD hybrid case
+    keypair_free(&full_keypair);
+    keypair_free(&pq_keypair);
+    goto free_private_key;
+
+cleanup:
+    // Free resources for non-QKD hybrid case
     keypair_free(&full_keypair);
 
 free_pq_keypair:
@@ -520,9 +544,6 @@ int main(int argc, char **argv) {
     }
     // TODO_QKD: Add test for QKD hybrid KEMs
     for (; algs->algorithm_names != NULL; ++algs) {
-        if (is_kem_algorithm_qkd_hybrid(algs->algorithm_names)) {
-            continue;
-        }
         if (test_algorithm(libctx, algs->algorithm_names)) {
             fprintf(stderr, cRED " failed for %s " cNORM "\n",
                     algs->algorithm_names);

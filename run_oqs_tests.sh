@@ -115,6 +115,8 @@ run_params_test() {
 
     cd _build/test
     echo "Running from directory: $(pwd)"
+
+    echo "Running EVP PKEY params tests with CH=$QKD_KEY_ID_CH"
     
     ./oqs_test_evp_pkey_params "qkdkemprovider" "${OPENSSL_CONF}"
     local result=$?

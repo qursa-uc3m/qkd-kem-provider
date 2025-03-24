@@ -108,6 +108,33 @@ Run only TLS Group tests
 ./run_oqs_tests.sh --groups
 ```
 
+#### Testing QKD-KEM Parameters with QuKayDee Backend
+
+Set up your QuKayDee account environment variables:
+
+```bash
+export QKD_BACKEND=qukaydee
+export ACCOUNT_ID=2509  # Replace with your account ID
+```
+
+Source the OpenSSL environment script:
+
+```bash
+source ./scripts/oqs_env.sh
+```
+
+Build the provider with QKD support enabled:
+
+```bash
+yexport OQSPROV_CMAKE_PARAMS="-DQKD_KEY_ID_CH=ON"
+export LIBOQS_BRANCH="0.12.0"
+./scripts/fullbuild.sh -f
+```
+
+```bash
+./run_oqs_tests.sh --params
+```
+
 ### TLS integration tests
 
 You can test the QKD-KEM groups for TLS in the following way.
@@ -154,16 +181,14 @@ which is based in [open-quantum-safe/oqs-provider/scripts/test_tls_full.py](http
 ## Configuring the QuKayDee environment
 
 First, follow the instructions in the [QuKayDee](https://qukaydee.com/pages/getting_started) page. At some point, you will have to download the server's certificate. This will have a name of the form
+
 ```bash
 account-<ACCOUNT_ID>-server-ca-qukaydee-com.crt
 ```
 
 Use this ACCOUNT_ID number for configuring your environment. When you have configured the rest of the certificates (do not forget to upload the client's root certificate to the site), save them to a folder called ```qkd_certs``` in the root's directory. You can then configure the environment by running
+
 ```bash
 export QKD_BACKEND=qukaydee && export ACCOUNT_ID="<ACCOUNT_ID>"
 source ./oqs_env.sh
 ```
-
-
-
-
