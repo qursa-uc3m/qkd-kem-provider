@@ -1433,7 +1433,7 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
 #ifdef ETSI_004_API
     // For ETSI 004: At key generation time, only establish connection to get
     // key ID
-    if (!qkd_open_connect(qkd_ctx)) {
+    if (!qkd_open(qkd_ctx)) {
         QKD_DEBUG("Failed to establish QKD connection");
         ret = QKD_ERR_PROTOCOL;
         goto err;

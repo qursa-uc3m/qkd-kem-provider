@@ -41,6 +41,7 @@
 #ifdef ETSI_004_API
 /* Initialize QKD context and map to ETSI API */
 bool qkd_open(QKD_CTX *ctx) {
+    QKD_DEBUG("ETSI004: qkd_open()");
     if (!ctx)
         return false;
     /*
@@ -73,6 +74,7 @@ bool qkd_open(QKD_CTX *ctx) {
 
 /* Close connection using ETSI API */
 bool qkd_close(QKD_CTX *ctx) {
+    QKD_DEBUG("ETSI004: qkd_close()");
     if (!ctx || !ctx->is_connected) {
         QKD_DEBUG("ETSI004: Invalid context or not connected");
         return false;
@@ -279,6 +281,7 @@ bool qkd_get_key_with_ids(QKD_CTX *ctx) {
 #endif /* ETSI_014_API */
 
 bool qkd_get_key(QKD_CTX *ctx) {
+    QKD_DEBUG("ETSI004/ETSI014: qkd_get_key()");
     if (!ctx) {
         QKD_DEBUG("Invalid QKD context");
         return false;

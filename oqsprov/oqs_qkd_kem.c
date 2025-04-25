@@ -119,7 +119,7 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
 #ifdef ETSI_004_API
     /* First establish session with received key ID */
     memcpy(ctx->key_id, key_id_in, QKD_KSID_SIZE);
-    if (!qkd_open_connect(ctx)) {
+    if (!qkd_open(ctx)) {
         QKD_DEBUG("Failed to establish QKD session");
         ret = OQS_ERROR;
         goto err;
