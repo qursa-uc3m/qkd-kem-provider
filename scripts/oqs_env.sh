@@ -57,11 +57,19 @@ if [ "${QKD_BACKEND}" = "qukaydee" ]; then
 # Check if backend is ETSI 004 Python client
 elif [ "${QKD_BACKEND}" = "python_client" ]; then
     echo "Setting up ETSI 004 Python Client environment:"
+    conda deactivate
+
+    # Ensure LD_LIBRARY_PATH doesn't include conda's lib path
+    export LD_LIBRARY_PATH=/usr/local/lib:/opt/oqs_openssl3/.local/lib64
+
+    # Set PYTHONHOME to system Python
+    export PYTHONHOME=/usr
+    export PYTHONPATH=/usr/lib/python3/dist-packages
     
     # Find the QUBIP ETSI-QKD-004 directory - adjust path as needed
     # This assumes it's in the same parent directory as your project
     #QUBIP_DIR="$(cd ${PROJECT_DIR}/../etsi-qkd-004 &> /dev/null && pwd)"
-    QUBIP_DIR="/home/javi/Documents/apps/QURSA/qkd-etsi-api-c-wrapper/etsi-qkd-004"
+    QUBIP_DIR="" # set your certificates path here
     if [ ! -d "${QUBIP_DIR}" ]; then
         echo "Warning: QUBIP ETSI-QKD-004 directory not found at ${QUBIP_DIR}"
         echo "Please enter path to QUBIP directory:"

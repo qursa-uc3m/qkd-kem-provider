@@ -108,7 +108,7 @@ Run only TLS Group tests
 ./run_oqs_tests.sh --groups
 ```
 
-#### Testing QKD-KEM Parameters with QuKayDee Backend
+### Testing QKD-KEM Parameters with QuKayDee Backend
 
 Set up your QuKayDee account environment variables:
 
@@ -126,13 +126,53 @@ source ./scripts/oqs_env.sh
 Build the provider with QKD support enabled:
 
 ```bash
-yexport OQSPROV_CMAKE_PARAMS="-DQKD_KEY_ID_CH=ON"
+export OQSPROV_CMAKE_PARAMS="-DQKD_KEY_ID_CH=ON"
 export LIBOQS_BRANCH="0.12.0"
 ./scripts/fullbuild.sh -f
 ```
 
 ```bash
 ./run_oqs_tests.sh --params
+```
+
+### Testing QKD-KEM Provider with QUBIP's ETSI 004 client
+
+For ETSI 004 support through the QKD-KEM Provider, see the [QKD ETSI API C Wrapper README](https://github.com/qursa-uc3m/qkd-etsi-api-c-wrapper). You can find the general setup instructions there.
+
+
+One thing to note is that we have to modify the `docker-compose.yml` so both server containers reference the localhost certificates:
+
+```yaml
+services:
+  qkd_server_alice:
+    build: ./server
+    container_name: qkd_server_alice
+    environment:
+      - SERVER_CERT_PEM=/certs/server_cert_localhost.pem  # Server public key
+      - SERVER_CERT_KEY=/certs/server_key_localhost.pem  # Server private key
+      - CLIENT_CERT_PEM=/certs/client_cert_localhost.pem  # Client public key
+      # Keep the rest unchanged
+
+  qkd_server_bob:
+    build: ./server
+    container_name: qkd_server_bob
+    environment:
+      - SERVER_CERT_PEM=/certs/server_cert_localhost.pem  # Server public key
+      - SERVER_CERT_KEY=/certs/server_key_localhost.pem  # Server private key
+      - CLIENT_CERT_PEM=/certs/client_cert_localhost.pem  # Client public key
+      # Keep the rest unchanged
+```
+
+and the ensure the `./scripts/oqs_env.sh` script is set to use the same certificates when `QKD_BACKEND=python_client` is set in the `QUBIP_DIR` variable.
+
+Then
+
+```bash
+# 1) Prepare environment for OpenSSL and the provider in each terminal
+export QKD_BACKEND=python_client
+source ./scripts/oqs_env.sh
+export IS_TLS_SERVER=1 # In the server terminal
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libpython3.10.so.1.0
 ```
 
 ### TLS integration tests
