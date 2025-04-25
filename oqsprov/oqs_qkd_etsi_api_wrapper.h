@@ -11,7 +11,8 @@
 #ifndef QKD_ETSI_API_WRAPPER_H_
 #define QKD_ETSI_API_WRAPPER_H_
 
-#define ETSI_014_API // or ETSI_014_API
+//#define ETSI_014_API // or ETSI_014_API
+#define ETSI_004_API // or ETSI_014_API
 
 #include <openssl/evp.h>
 #include <qkd-etsi-api/qkd_config.h>
@@ -40,8 +41,8 @@ typedef struct {
     char *sae_id;             // SAE ID for this context
     EVP_PKEY *key;
     bool is_initiator;
-    // bool is_connected;
 #ifdef ETSI_004_API
+    bool is_connected;
     struct qkd_qos_s qos;
     struct qkd_metadata_s metadata;
 #elif defined(ETSI_014_API)
