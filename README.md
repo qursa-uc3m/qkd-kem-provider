@@ -139,7 +139,6 @@ export LIBOQS_BRANCH="0.12.0"
 
 For ETSI 004 support through the QKD-KEM Provider, see the [QKD ETSI API C Wrapper README](https://github.com/qursa-uc3m/qkd-etsi-api-c-wrapper). You can find the general setup instructions there.
 
-
 One thing to note is that we have to modify the `docker-compose.yml` so both server containers reference the localhost certificates:
 
 ```yaml
@@ -170,7 +169,7 @@ Then
 ```bash
 # 1) Prepare environment for OpenSSL and the provider in each terminal
 export QKD_BACKEND=python_client
-source ./scripts/oqs_env.sh
+source ./scripts/oqs_env.sh -c /path/to/etsi-qkd-004/certs  # Specify path to your QKD certificates
 export IS_TLS_SERVER=1 # In the server terminal
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libpython3.10.so.1.0
 ```

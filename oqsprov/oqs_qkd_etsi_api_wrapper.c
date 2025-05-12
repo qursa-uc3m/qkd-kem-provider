@@ -44,12 +44,28 @@ bool qkd_open(QKD_CTX *ctx) {
     QKD_DEBUG("ETSI004: qkd_open()");
     if (!ctx)
         return false;
-    /*
-    if (!ctx->source_uri)
-        ctx->source_uri = "qkd://localhost:1234";
-    if (!ctx->dest_uri)
-        ctx->dest_uri = "qkd://localhost:5678";
-    */
+
+    if (!ctx->source_uri || !ctx->dest_uri) {
+        QKD_DEBUG("ETSI004: URIs not initialized");
+        return false;
+    }
+    if (!ctx->qos.Metadata_mimetype) {
+        QKD_DEBUG("ETSI004: Metadata_mimetype not initialized");
+        return false;
+    }
+    
+    if (!ctx->metadata.Metadata_buffer) {
+        QKD_DEBUG("ETSI004: Metadata_buffer not initialized");
+        return false;
+    }
+
+    QKD_DEBUG("  key_id address: %p", ctx->key_id);
+    QKD_DEBUG("  key_id hexdump:");
+    for (int i = 0; i < 16; i++) {
+        fprintf(stderr, "%02x ", ctx->key_id[i]);
+    }
+    fprintf(stderr, "\n");
+
     uint32_t status;
     // unsigned char key_stream_id[QKD_KSID_SIZE] = {0};
 
@@ -61,8 +77,17 @@ bool qkd_open(QKD_CTX *ctx) {
     QKD_DEBUG("ETSI004: OPEN_CONNECT returned result=%u status=%u", result,
               status);
 
-    if (result == QKD_STATUS_SUCCESS ||
-        result == QKD_STATUS_PEER_DISCONNECTED) {
+    
+    // Print the key_id again to see if it was updated
+    QKD_DEBUG("ETSI004: key_id after OPEN_CONNECT:");
+    for (int i = 0; i < 16; i++) {
+        fprintf(stderr, "%02x ", ctx->key_id[i]);
+    }
+    fprintf(stderr, "\n");
+
+    if (result == QKD_STATUS_SUCCESS || 
+        result == QKD_STATUS_PEER_NOT_CONNECTED ||
+        status == QKD_STATUS_QOS_NOT_MET) {  // Accept QoS adjustments
         ctx->is_connected = true;
         QKD_DEBUG("ETSI004: Connection established successfully");
         return true;
@@ -87,7 +112,7 @@ bool qkd_close(QKD_CTX *ctx) {
     uint32_t result = CLOSE(key_stream_id, &status);
 
     if (result == 0 && (status == QKD_STATUS_SUCCESS ||
-                        status == QKD_STATUS_PEER_DISCONNECTED)) {
+                        status == QKD_STATUS_PEER_NOT_CONNECTED)) {
         ctx->is_connected = false;
         if (ctx->key) {
             EVP_PKEY_free(ctx->key);
@@ -292,12 +317,56 @@ bool qkd_get_key(QKD_CTX *ctx) {
     uint32_t index = 0;
     unsigned char key_buffer[QKD_KEY_SIZE];
 
+    // Debugging checks before GET_KEY call
+    QKD_DEBUG("ETSI004: Pre-GET_KEY Checks");
+    
+    // Check key_id
+    if (!ctx->key_id) {
+        QKD_DEBUG("ETSI004: key_id is NULL!");
+        return false;
+    }
+    
+    QKD_DEBUG("ETSI004: key_id hex dump:");
+    for (int i = 0; i < QKD_KSID_SIZE; i++) {
+        fprintf(stderr, "%02x ", ctx->key_id[i]);
+    }
+    fprintf(stderr, "\n");
+    
+    if (!ctx->metadata.Metadata_buffer) {
+        QKD_DEBUG("ETSI004: metadata.Metadata_buffer is NULL!");
+        
+        // Emergency metadata initialization if somehow it wasn't initialized
+        ctx->metadata.Metadata_size = QKD_METADATA_MAX_SIZE;
+        ctx->metadata.Metadata_buffer = calloc(1, QKD_METADATA_MAX_SIZE);
+        if (!ctx->metadata.Metadata_buffer) {
+            QKD_DEBUG("ETSI004: Emergency metadata buffer allocation failed");
+            return false;
+        }
+        
+        // Initialize with empty JSON
+        memcpy(ctx->metadata.Metadata_buffer, "{}", 2);
+        QKD_DEBUG("ETSI004: Emergency metadata initialization completed");
+    } else {
+        QKD_DEBUG("ETSI004: metadata.Metadata_buffer is at address %p", ctx->metadata.Metadata_buffer);
+        
+        // Check metadata content (first few bytes)
+        QKD_DEBUG("ETSI004: First 8 bytes of metadata buffer:");
+        for (int i = 0; i < 8 && i < ctx->metadata.Metadata_size; i++) {
+            fprintf(stderr, "%02x ", ctx->metadata.Metadata_buffer[i]);
+        }
+        fprintf(stderr, "\n");
+    }
+    
+    // Check connection state
+    QKD_DEBUG("ETSI004: is_connected = %d", ctx->is_connected);
+    QKD_DEBUG("ETSI004: is_initiator = %d", ctx->is_initiator);
+
     QKD_DEBUG("ETSI004: Getting key for stream ID");
     uint32_t result =
         GET_KEY(ctx->key_id, &index, key_buffer, &ctx->metadata, &status);
 
     if (result == 0 && (status == QKD_STATUS_SUCCESS ||
-                        status == QKD_STATUS_PEER_DISCONNECTED)) {
+                        status == QKD_STATUS_PEER_NOT_CONNECTED)) {
         // Convert key to EVP format
         ctx->key = EVP_PKEY_new_raw_private_key(EVP_PKEY_X25519, NULL,
                                                 key_buffer, QKD_KEY_SIZE);

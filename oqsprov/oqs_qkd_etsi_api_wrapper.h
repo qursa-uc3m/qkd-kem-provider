@@ -11,8 +11,8 @@
 #ifndef QKD_ETSI_API_WRAPPER_H_
 #define QKD_ETSI_API_WRAPPER_H_
 
-#define ETSI_014_API // or ETSI_014_API
-//#define ETSI_004_API // or ETSI_014_API
+//#define ETSI_014_API // or ETSI_014_API
+#define ETSI_004_API // or ETSI_014_API
 
 #include <openssl/evp.h>
 #include <qkd-etsi-api-c-wrapper/qkd_config.h>
@@ -31,7 +31,11 @@ extern "C" {
 
 /* Main QKD context structure */
 typedef struct {
+#ifdef ETSI_004_API
+    unsigned char key_id[16];
+#elif defined(ETSI_014_API)
     unsigned char key_id[37]; // 36 chars for UUID + null terminator
+#endif
     char *source_uri;         // URI for source KME
     char *dest_uri;           // URI for destination KME
     char *master_kme;         // Master KME hostname from env

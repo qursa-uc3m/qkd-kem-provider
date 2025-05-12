@@ -1,19 +1,36 @@
 #!/bin/bash
 
-# Default installation directory
+# Default parameters
 OQS_DIR="/opt/oqs_openssl3"
+QKD_CERTS_DIR=""
 
-# Allow custom directory via command line argument
-if [ "$1" != "" ]; then
-    OQS_DIR="$1"
-fi
+# Print usage information
+function show_usage {
+    echo "Usage: source $0 [-o OQS_DIR] [-c QKD_CERTS_DIR]"
+    echo "Options:"
+    echo "  -o    Set OpenSSL installation directory (default: /opt/oqs_openssl3)"
+    echo "  -c    Set QKD certificates directory (required for python_client backend)"
+    echo ""
+    echo "Examples:"
+    echo "  source $0 -o /custom/openssl/path -c /path/to/qkd/certs"
+    echo "  QKD_BACKEND=python_client source $0 -c /path/to/qkd/certs"
+    return 0
+}
 
+# Parse command line arguments
+while getopts "o:c:h" opt; do
+    case "$opt" in
+        o) OQS_DIR="$OPTARG" ;;
+        c) QKD_CERTS_DIR="$OPTARG" ;;
+        h) show_usage; return 0 ;;
+        *) echo "Invalid option: -$OPTARG"; show_usage; return 1 ;;
+    esac
+done
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # Get the project root directory (two levels up from scripts/)
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." &> /dev/null && pwd )"
-
 
 # Export environment variables
 export OPENSSL_CONF="${OQS_DIR}/oqs-provider/scripts/openssl-ca.cnf"
@@ -57,7 +74,7 @@ if [ "${QKD_BACKEND}" = "qukaydee" ]; then
 # Check if backend is ETSI 004 Python client
 elif [ "${QKD_BACKEND}" = "python_client" ]; then
     echo "Setting up ETSI 004 Python Client environment:"
-    conda deactivate
+    #conda deactivate
 
     # Ensure LD_LIBRARY_PATH doesn't include conda's lib path
     export LD_LIBRARY_PATH=/usr/local/lib:/opt/oqs_openssl3/.local/lib64
@@ -66,32 +83,46 @@ elif [ "${QKD_BACKEND}" = "python_client" ]; then
     export PYTHONHOME=/usr
     export PYTHONPATH=/usr/lib/python3/dist-packages
     
-    # Find the QUBIP ETSI-QKD-004 directory - adjust path as needed
-    # This assumes it's in the same parent directory as your project
-    #QUBIP_DIR="$(cd ${PROJECT_DIR}/../etsi-qkd-004 &> /dev/null && pwd)"
-    QUBIP_DIR="" # set your certificates path here
-    if [ ! -d "${QUBIP_DIR}" ]; then
-        echo "Warning: QUBIP ETSI-QKD-004 directory not found at ${QUBIP_DIR}"
-        echo "Please enter path to QUBIP directory:"
-        read QUBIP_DIR
+    # Check if QKD_CERTS_DIR is provided when using python_client backend
+    if [ -z "${QKD_CERTS_DIR}" ]; then
+        echo "ERROR: QKD certificates directory not provided."
+        echo "When using the python_client backend, you must specify a certificate directory with -c flag."
+        echo "Example: QKD_BACKEND=python_client source $0 -c /path/to/qkd/certs"
+        return 1
+    fi
+    
+    if [ ! -d "${QKD_CERTS_DIR}" ]; then
+        echo "ERROR: Directory '${QKD_CERTS_DIR}' does not exist."
+        echo "Please provide a valid path to your QKD certificates directory."
+        return 1
     fi
     
     # Certificate paths
-    export QKD_CERT_DIR="${QUBIP_DIR}/certs"
-    export QKD_CLIENT_CERT_PEM="${QKD_CERT_DIR}/client_cert_localhost.pem"
-    export QKD_CLIENT_CERT_KEY="${QKD_CERT_DIR}/client_key_localhost.pem"
-    export QKD_SERVER_CERT_PEM="${QKD_CERT_DIR}/server_cert_localhost.pem"
-    
-    # Server addresses
-    export QKD_SERVER_ALICE_ADDRESS="https://localhost:25575/api"
-    export QKD_SERVER_BOB_ADDRESS="https://localhost:25576/api"
-    
-    # SAE identifiers
-    export QKD_ALICE_SAE_ID="alice_sae_1"
-    export QKD_BOB_SAE_ID="bob_sae_1"
-    
-    # Skip certificate verification for testing
-    export QKD_VERIFY_CERT="False"
+    export CLIENT_CERT_PEM="${QKD_CERTS_DIR}/client_cert_localhost.pem"
+    export CLIENT_CERT_KEY="${QKD_CERTS_DIR}/client_key_localhost.pem"
+    export SERVER_CERT_PEM="${QKD_CERTS_DIR}/server_cert_localhost.pem"
+
+    export SERVER_ADDRESS="localhost"
+    export SERVER_PORT="25576"
+    export CLIENT_ADDRESS="localhost"
+    export CLIENT_PORT="25575"
+
+    export QKD_MASTER_KME_HOSTNAME="localhost"  # Alice's hostname only
+    export QKD_SLAVE_KME_HOSTNAME="localhost"   # Bob's hostname only
+    export QKD_MASTER_SAE="alice_sae_1"
+    export QKD_SLAVE_SAE="bob_sae_1"
+
+    export KEY_INDEX=0
+    export METADATA_SIZE=1024
+
+    # QoS parameters
+    export QOS_KEY_CHUNK_SIZE=32
+    export QOS_MAX_BPS=40000
+    export QOS_MIN_BPS=5000
+    export QOS_JITTER=10
+    export QOS_PRIORITY=0
+    export QOS_TIMEOUT=5000
+    export QOS_TTL=3600
     
     # Debug level
     export QKD_DEBUG_LEVEL=4
@@ -100,23 +131,13 @@ elif [ "${QKD_BACKEND}" = "python_client" ]; then
     export PYTHONPATH="${PYTHONPATH}:${HOME}/.local/lib/qkd"
     
     echo "ETSI 004 Python Client environment set:"
-    echo "QKD_SERVER_ALICE_ADDRESS=$QKD_SERVER_ALICE_ADDRESS"
-    echo "QKD_SERVER_BOB_ADDRESS=$QKD_SERVER_BOB_ADDRESS"
-    echo "QKD_ALICE_SAE_ID=$QKD_ALICE_SAE_ID"
-    echo "QKD_BOB_SAE_ID=$QKD_BOB_SAE_ID"
-    echo "QKD_CLIENT_CERT_PEM=$QKD_CLIENT_CERT_PEM"
-    echo "QKD_CLIENT_CERT_KEY=$QKD_CLIENT_CERT_KEY"
-    echo "QKD_SERVER_CERT_PEM=$QKD_SERVER_CERT_PEM"
-    echo "QKD_VERIFY_CERT=$QKD_VERIFY_CERT"
+    echo "QKD_SERVER_ALICE_ADDRESS=$SERVER_ADDRESS"
+    echo "QKD_SERVER_BOB_ADDRESS=$CLIENT_ADDRESS"
+    echo "QKD_CLIENT_CERT_PEM=$CLIENT_CERT_PEM"
+    echo "QKD_CLIENT_CERT_KEY=$CLIENT_CERT_KEY"
+    echo "QKD_SERVER_CERT_PEM=$SERVER_CERT_PEM"
     echo "QKD_DEBUG_LEVEL=$QKD_DEBUG_LEVEL"
     echo "PYTHONPATH updated to include: ${HOME}/.local/lib/qkd"
-    
-    # For OpenSSL testing, we need to map these to the corresponding QKD-KEM values
-    # This allows the same code to work with both ETSI 004 and ETSI 014
-    export QKD_MASTER_KME_HOSTNAME="${QKD_SERVER_ALICE_ADDRESS}"
-    export QKD_SLAVE_KME_HOSTNAME="${QKD_SERVER_BOB_ADDRESS}"
-    export QKD_MASTER_SAE="${QKD_ALICE_SAE_ID}"
-    export QKD_SLAVE_SAE="${QKD_BOB_SAE_ID}"
 else
     echo "Using default QKD backend (simulated) with simulated URIs"
     echo "Check if the URIS are being set correctly for your backend"
