@@ -11,18 +11,18 @@
 #ifndef QKD_ETSI_API_WRAPPER_H_
 #define QKD_ETSI_API_WRAPPER_H_
 
-//#define ETSI_014_API // or ETSI_014_API
-#define ETSI_004_API // or ETSI_014_API
+#define ETSI_014_API // or ETSI_014_API
+//#define ETSI_004_API // or ETSI_014_API
 
 #include <openssl/evp.h>
-#include <qkd-etsi-api/qkd_config.h>
-#include <qkd-etsi-api/qkd_etsi_api.h>
+#include <qkd-etsi-api-c-wrapper/qkd_config.h>
+#include <qkd-etsi-api-c-wrapper/qkd_etsi_api.h>
 #include <stdbool.h>
 #include <stdint.h>
 #ifdef ETSI_004_API
-#include <qkd-etsi-api/etsi004/api.h>
+#include <qkd-etsi-api-c-wrapper/etsi004/api.h>
 #elif defined(ETSI_014_API)
-#include <qkd-etsi-api/etsi014/api.h>
+#include <qkd-etsi-api-c-wrapper/etsi014/api.h>
 #endif
 
 #ifdef __cplusplus

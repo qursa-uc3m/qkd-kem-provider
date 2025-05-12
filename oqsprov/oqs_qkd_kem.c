@@ -7,11 +7,11 @@
  */
 #include "oqs_qkd_kem.h"
 #include <openssl/err.h>
-#include <qkd-etsi-api/qkd_etsi_api.h>
+#include <qkd-etsi-api-c-wrapper/qkd_etsi_api.h>
 #ifdef ETSI_004_API
-#include <qkd-etsi-api/etsi004/api.h>
+#include <qkd-etsi-api-c-wrapper/etsi004/api.h>
 #elif defined(ETSI_014_API)
-#include <qkd-etsi-api/etsi014/api.h>
+#include <qkd-etsi-api-c-wrapper/etsi014/api.h>
 #endif
 #include "oqs_qkd_ctx.h"
 
