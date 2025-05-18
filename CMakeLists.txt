@@ -1,12 +1,35 @@
 if (WIN32)
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+    cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 else()
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+    cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 endif()
+
 project(qkd-kem-provider LANGUAGES C)
 set(OQSPROVIDER_VERSION_TEXT "0.1.0-dev")
 set(CMAKE_C_STANDARD 11)
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
+
+# Set ETSI API version options
+option(ETSI_004_API "Use ETSI 004 API" OFF)
+option(ETSI_014_API "Use ETSI 014 API" ON)
+
+# Make sure only one is enabled
+if(ETSI_004_API AND ETSI_014_API)
+    message(FATAL_ERROR "Only one ETSI API version can be enabled at a time")
+endif()
+
+if(ETSI_004_API)
+    add_definitions(-DETSI_004_API)
+    message(STATUS "Using ETSI 004 API")
+elseif(ETSI_014_API)
+    add_definitions(-DETSI_014_API)
+    message(STATUS "Using ETSI 014 API")
+else()
+    # Default to 014 if none specified
+    add_definitions(-DETSI_014_API)
+    message(STATUS "Defaulting to ETSI 014 API")
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Creating Debug build with OQS-Debug env vars enabled")
 else()
@@ -15,7 +38,7 @@ else()
 endif()
 
 if(MSVC)
-  set(CMAKE_EXE_LINKER_FLAGS
+  set(CMAKE_EXE_LINKER_FLAGS 
       "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
   add_definitions(-DOQS_PROVIDER_NOATOMIC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)

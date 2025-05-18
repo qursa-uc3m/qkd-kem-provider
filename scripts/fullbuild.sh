@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The following variables influence the operation of this build script:
-# Argument -f: Soft clean, ensuring re-build of oqs-provider binary
+# Argument -f: Soft clean, ensuring re-build of qkdkemprovider binary
 # Argument -F: Hard clean, ensuring checkout and build of all dependencies
 # EnvVar CMAKE_PARAMS: passed to cmake
 # EnvVar MAKE_PARAMS: passed to invocations of make; sample value: "-j"
@@ -11,6 +11,17 @@
 # EnvVar OPENSSL_INSTALL: If set, defines (binary) OpenSSL installation to use
 # EnvVar OPENSSL_BRANCH: Defines branch/release of openssl; if set, forces source-build of OpenSSL3
 # EnvVar liboqs_DIR: If set, needs to point to a directory where liboqs has been installed to
+# EnvVar ETSI_API_VERSION: If set, defines which ETSI API version to use (004 or 014, default is 014)
+
+# Add ETSI API version handling
+if [ -z "$ETSI_API_VERSION" ] || [ "$ETSI_API_VERSION" != "004" ]; then
+    export ETSI_API_VERSION="014"
+    export ETSI_API_FLAG="-DETSI_014_API=ON -DETSI_004_API=OFF"
+    echo "Using ETSI API version: 014"
+else
+    export ETSI_API_FLAG="-DETSI_004_API=ON -DETSI_014_API=OFF"
+    echo "Using ETSI API version: 004"
+fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
    SHLIBEXT="dylib"
@@ -39,7 +50,7 @@ else
    export DOQS_ALGS_ENABLED="-DOQS_ALGS_ENABLED=$OQS_ALGS_ENABLED"
 fi
 
-if [ -z "$OQS_LIBJADE_BUILD"]; then
+if [ -z "$OQS_LIBJADE_BUILD" ]; then
    export DOQS_LIBJADE_BUILD="-DOQS_LIBJADE_BUILD=ON"
 else
    export DOQS_LIBJADE_BUILD="-DOQS_LIBJADE_BUILD=$OQS_LIBJADE_BUILD"
@@ -132,9 +143,9 @@ if [ ! -f "_build/lib/qkdkemprovider.$SHLIBEXT" ]; then
    #BUILD_TYPE=""
    # for omitting public key in private keys add -DNOPUBKEY_IN_PRIVKEY=ON
    if [ -z "$OPENSSL_INSTALL" ]; then
-       cmake $CMAKE_PARAMS $CMAKE_OPENSSL_LOCATION $BUILD_TYPE $OQSPROV_CMAKE_PARAMS -S . -B _build && cmake --build _build
+       cmake $CMAKE_PARAMS $CMAKE_OPENSSL_LOCATION $BUILD_TYPE $ETSI_API_FLAG $OQSPROV_CMAKE_PARAMS -S . -B _build && cmake --build _build
    else
-       cmake $CMAKE_PARAMS -DOPENSSL_ROOT_DIR=$OPENSSL_INSTALL $BUILD_TYPE $OQSPROV_CMAKE_PARAMS -S . -B _build && cmake --build _build
+       cmake $CMAKE_PARAMS -DOPENSSL_ROOT_DIR=$OPENSSL_INSTALL $BUILD_TYPE $ETSI_API_FLAG $OQSPROV_CMAKE_PARAMS -S . -B _build && cmake --build _build
    fi
    if [ $? -ne 0 ]; then
      echo "provider build failed. Exiting."

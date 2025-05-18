@@ -11,8 +11,9 @@
 #ifndef QKD_ETSI_API_WRAPPER_H_
 #define QKD_ETSI_API_WRAPPER_H_
 
-//#define ETSI_014_API // or ETSI_014_API
-#define ETSI_004_API // or ETSI_014_API
+#if !defined(ETSI_004_API) && !defined(ETSI_014_API)
+#define ETSI_014_API
+#endif
 
 #include <openssl/evp.h>
 #include <qkd-etsi-api-c-wrapper/qkd_config.h>
