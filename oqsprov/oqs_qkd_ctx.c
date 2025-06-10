@@ -40,80 +40,55 @@ static int qkd_init_uris(QKD_CTX *ctx) {
         return OQS_ERROR;
     }
 
-    // Get base hostnames only
+#ifdef ETSI_004_API
+
+    const char *source_uri = getenv("QKD_SOURCE_URI");
+    const char *dest_uri = getenv("QKD_DEST_URI");
+
+    if (!source_uri || !dest_uri) {
+        QKD_DEBUG("ETSI 004: QKD_SOURCE_URI and QKD_DEST_URI must be set");
+        return OQS_ERROR;
+    }
+
+    QKD_DEBUG("ETSI 004: Using URIs from environment: source=%s, dest=%s", 
+              source_uri, dest_uri);
+
+    // Store the URIs directly
+    ctx->source_uri = OPENSSL_strdup(source_uri);
+    ctx->dest_uri = OPENSSL_strdup(dest_uri);
+
+    if (!ctx->source_uri || !ctx->dest_uri) {
+        QKD_DEBUG("ETSI 004: Failed to allocate URI strings");
+        goto err;
+    }
+
+#else
+    // For ETSI 014, use the hostname-based environment variables
     const char *master_kme = getenv("QKD_MASTER_KME_HOSTNAME");
     const char *slave_kme = getenv("QKD_SLAVE_KME_HOSTNAME");
     const char *master_sae = getenv("QKD_MASTER_SAE");
     const char *slave_sae = getenv("QKD_SLAVE_SAE");
 
     if (!master_kme || !slave_kme || !master_sae || !slave_sae) {
-        QKD_DEBUG("Required QKD environment variables not set");
+        QKD_DEBUG("ETSI 014: Required environment variables not set");
         return OQS_ERROR;
     }
 
-    QKD_DEBUG("Using base environment variables: master_kme=%s, slave_kme=%s", 
-              master_kme ? master_kme : "NULL", slave_kme ? slave_kme : "NULL");
+    QKD_DEBUG("ETSI 014: Using hostnames: master_kme=%s, slave_kme=%s", 
+              master_kme, slave_kme);
 
-    // Store base hostnames
+    // Store hostnames
     ctx->master_kme = OPENSSL_strdup(master_kme);
     ctx->slave_kme = OPENSSL_strdup(slave_kme);
     ctx->master_sae = OPENSSL_strdup(master_sae);
     ctx->slave_sae = OPENSSL_strdup(slave_sae);
 
-    if (!ctx->master_kme || !ctx->slave_kme || !ctx->master_sae ||
-        !ctx->slave_sae) {
-        QKD_DEBUG("Failed to allocate KME or SAE strings");
+    if (!ctx->master_kme || !ctx->slave_kme || !ctx->master_sae || !ctx->slave_sae) {
+        QKD_DEBUG("ETSI 014: Failed to allocate KME or SAE strings");
         goto err;
     }
 
-#ifdef ETSI_004_API
-    // For ETSI 004, construct the URIs with the required prefixes
-    char *source_uri = NULL;
-    char *dest_uri = NULL;
-
-    // Allocate memory for the URIs
-    source_uri = OPENSSL_malloc(strlen(ctx->master_kme) + 50); // extra space for prefix and port
-    dest_uri = OPENSSL_malloc(strlen(ctx->slave_kme) + 50);
-    
-    if (!source_uri || !dest_uri) {
-        QKD_DEBUG("Failed to allocate memory for URIs");
-        OPENSSL_free(source_uri);
-        OPENSSL_free(dest_uri);
-        goto err;
-    }
-
-    // Construct URIs for initiator (Alice)
-    if (ctx->is_initiator) {
-        // Format: client://hostname:port for source, server://hostname:port for dest
-        sprintf(source_uri, "client://%s:25575", ctx->master_kme);
-        sprintf(dest_uri, "server://%s:25576", ctx->slave_kme);
-    } 
-    // Construct URIs for responder (Bob)
-    else {
-        // Format: client://hostname:port for source, server://hostname:port for dest
-        sprintf(source_uri, "client://%s:25575", ctx->slave_kme);
-        sprintf(dest_uri, "server://%s:25576", ctx->master_kme);
-    }
-
-    // Free the original pointers and assign new URIs
-    OPENSSL_free(ctx->master_kme);
-    OPENSSL_free(ctx->slave_kme);
-    ctx->master_kme = source_uri;
-    ctx->slave_kme = dest_uri;
-
-    // Set the source/dest URIs to point to our constructed URIs
-    if (ctx->is_initiator) {
-        ctx->source_uri = ctx->master_kme;
-        ctx->dest_uri = ctx->slave_kme;
-        ctx->sae_id = ctx->slave_sae;
-    } else {
-        ctx->source_uri = ctx->master_kme;
-        ctx->dest_uri = ctx->slave_kme;
-        ctx->sae_id = ctx->master_sae;
-    }
-
-#else
-    // For ETSI 014 and other backends, use the original values
+    // Set URIs based on role
     if (ctx->is_initiator) {
         ctx->source_uri = ctx->master_kme;
         ctx->dest_uri = ctx->slave_kme;
@@ -125,20 +100,27 @@ static int qkd_init_uris(QKD_CTX *ctx) {
     }
 #endif
 
+    QKD_DEBUG("Final configuration: source_uri=%s, dest_uri=%s", 
+              ctx->source_uri ? ctx->source_uri : "NULL", 
+              ctx->dest_uri ? ctx->dest_uri : "NULL");
+
     return OQS_SUCCESS;
 
 err:
-    OPENSSL_free(ctx->master_kme);
-    OPENSSL_free(ctx->slave_kme);
-    OPENSSL_free(ctx->master_sae);
-    OPENSSL_free(ctx->slave_sae);
-    ctx->master_kme = NULL;
-    ctx->slave_kme = NULL;
-    ctx->master_sae = NULL;
-    ctx->slave_sae = NULL;
+#ifdef ETSI_004_API
+    // For ETSI 004: clean up directly allocated URIs
+    if (ctx->source_uri) { OPENSSL_free(ctx->source_uri); ctx->source_uri = NULL; }
+    if (ctx->dest_uri) { OPENSSL_free(ctx->dest_uri); ctx->dest_uri = NULL; }
+#else
+    // For ETSI 014: clean up KME/SAE strings (URIs point to these, so they'll be cleaned too)
+    if (ctx->master_kme) { OPENSSL_free(ctx->master_kme); ctx->master_kme = NULL; }
+    if (ctx->slave_kme) { OPENSSL_free(ctx->slave_kme); ctx->slave_kme = NULL; }
+    if (ctx->master_sae) { OPENSSL_free(ctx->master_sae); ctx->master_sae = NULL; }
+    if (ctx->slave_sae) { OPENSSL_free(ctx->slave_sae); ctx->slave_sae = NULL; }
     ctx->source_uri = NULL;
     ctx->dest_uri = NULL;
     ctx->sae_id = NULL;
+#endif
     return OQS_ERROR;
 }
 
