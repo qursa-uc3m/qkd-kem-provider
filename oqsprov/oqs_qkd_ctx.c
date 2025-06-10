@@ -210,11 +210,11 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     const char *env_ttl = getenv("QKD_QOS_TTL");
     
     if (env_chunk_size) oqsx_key->qkd_ctx->qos.Key_chunk_size = atoi(env_chunk_size);
-    if (env_timeout) oqsx_key->qkd_ctx->qos.Timeout = atoi(env_timeout);  // lowercase
-    if (env_priority) oqsx_key->qkd_ctx->qos.Priority = atoi(env_priority);  // lowercase
+    if (env_timeout) oqsx_key->qkd_ctx->qos.Timeout = atoi(env_timeout);
+    if (env_priority) oqsx_key->qkd_ctx->qos.Priority = atoi(env_priority);
     if (env_max_bps) oqsx_key->qkd_ctx->qos.Max_bps = atoi(env_max_bps);
     if (env_min_bps) oqsx_key->qkd_ctx->qos.Min_bps = atoi(env_min_bps);
-    if (env_jitter) oqsx_key->qkd_ctx->qos.Jitter = atoi(env_jitter);  // lowercase
+    if (env_jitter) oqsx_key->qkd_ctx->qos.Jitter = atoi(env_jitter);
     if (env_ttl) oqsx_key->qkd_ctx->qos.TTL = atoi(env_ttl);
     
     // Initialize metadata structure
@@ -228,6 +228,13 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         return OQS_ERROR;
     }
     memset(oqsx_key->qkd_ctx->metadata.Metadata_buffer, 0, QKD_METADATA_MAX_SIZE);
+    
+    // Do NOT call qkd_open() here
+    // For ETSI 004:
+    // - Alice will call qkd_open() during key generation (oqsx_key_gen_qkd)
+    // - Bob will call qkd_open() during encapsulation (oqs_qkd_get_encaps_key)
+    oqsx_key->qkd_ctx->is_connected = false;
+    QKD_DEBUG("ETSI 004: Context initialized, connection deferred to key generation/encapsulation");
 #endif
 
 #ifdef ETSI_014_API
@@ -249,40 +256,10 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
 #endif /* NDEBUG */
 #endif
 
-// Open QKD connection
-#ifdef ETSI_004_API
-    ret = qkd_open(oqsx_key->qkd_ctx);
-    if (ret <= 0) {
-        QKD_DEBUG("Failed to open QKD connection");
-        // Clean up resources before returning
-        if (oqsx_key->qkd_ctx->qos.Metadata_mimetype) {
-            OPENSSL_free(oqsx_key->qkd_ctx->qos.Metadata_mimetype);
-        }
-        if (oqsx_key->qkd_ctx->metadata.Metadata_buffer) {
-            OPENSSL_free(oqsx_key->qkd_ctx->metadata.Metadata_buffer);
-        }
-        OPENSSL_free(oqsx_key->qkd_ctx);
-        oqsx_key->qkd_ctx = NULL;
-        goto err;
-    }
-#elif defined(ETSI_014_API)
-// Here we load the URIs from the environment variables and check the status
-#ifdef DEBUG_QKD
-    if (!qkd_get_status(oqsx_key->qkd_ctx)) {
-        QKD_DEBUG("Failed to get QKD status for existing context");
-        goto err;
-    }
-#endif /* NDEBUG */
-    ret = OQS_SUCCESS;
-#endif
-
     QKD_DEBUG("QKD context initialized successfully as %s",
               is_initiator ? "initiator" : "responder");
-    // print oqsx_key->qkd_ctx->is_initiator = is_initiator
     QKD_DEBUG("INIT: Initiator role: %d", oqsx_key->qkd_ctx->is_initiator);
+    QKD_DEBUG("INIT: Connection will be established later during key operations");
 
     return OQS_SUCCESS;
-
-err:
-    return ret;
 }
