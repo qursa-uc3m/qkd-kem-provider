@@ -1431,23 +1431,45 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
     }
 
 #ifdef ETSI_004_API
-    // For ETSI 004: At key generation time, only establish connection to get
-    // key ID
-    if (!qkd_open(qkd_ctx)) {
-        QKD_DEBUG("Failed to establish QKD connection");
-        ret = QKD_ERR_PROTOCOL;
-        goto err;
+    const char *is_server = getenv("IS_TLS_SERVER");
+    
+    // Only the CLIENT (Alice/initiator) should establish connection during key generation
+    if (is_server == NULL || strcmp(is_server, "0") == 0) {
+        QKD_DEBUG("CLIENT: Establishing QKD connection during key generation");
+        
+        // Client (Alice) establishes connection to get key ID
+        if (!qkd_open(qkd_ctx)) {
+            QKD_DEBUG("Failed to establish QKD connection");
+            ret = QKD_ERR_PROTOCOL;
+            goto err;
+        }
+        
+        // Store Alice's key ID
+        memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
+        
+        QKD_DEBUG("CLIENT: Stored key ID:");
+        for (int i = 0; i < QKD_KSID_SIZE; i++) {
+            fprintf(stderr, "%02x", ((unsigned char*)key->comp_pubkey[idx_qkd])[i]);
+        }
+        fprintf(stderr, "\n");
+        
+        // Initialize private key to a known pattern (will be replaced during decapsulation)
+        unsigned char init_pattern[QKD_KEY_SIZE];
+        for (size_t i = 0; i < QKD_KEY_SIZE; i++) {
+            init_pattern[i] = (unsigned char)(i + 1);
+        }
+        memcpy(key->comp_privkey[idx_qkd], init_pattern, QKD_KEY_SIZE);
+        
+    } else {
+        QKD_DEBUG("SERVER: Deferring QKD connection until encapsulation");
+        
+        // Server (Bob) doesn't establish connection yet - waits for Alice's key ID
+        // Initialize with placeholder values
+        memset(key->comp_pubkey[idx_qkd], 0, QKD_KSID_SIZE);
+        memset(key->comp_privkey[idx_qkd], 0, QKD_KEY_SIZE);
+        
+        QKD_DEBUG("SERVER: Initialized with placeholder values, will use Alice's key ID later");
     }
-
-    // Store key ID using secure copy
-    memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
-
-    // Initialize private key to a known non-zero pattern for debug purposes
-    unsigned char init_pattern[QKD_KEY_SIZE];
-    for (size_t i = 0; i < QKD_KEY_SIZE; i++) {
-        init_pattern[i] = (unsigned char)(i + 1);
-    }
-    memcpy(key->comp_privkey[idx_qkd], init_pattern, QKD_KEY_SIZE);
 
 #elif defined(ETSI_014_API)
     const char *is_server = getenv("IS_TLS_SERVER");
