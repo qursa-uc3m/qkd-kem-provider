@@ -130,32 +130,11 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
         ret = OQS_ERROR;
         goto err;
     }
+
 #elif defined(ETSI_014_API)
     memcpy(ctx->key_id, key_id_in, QKD_KSID_SIZE);
     if (!qkd_get_key_with_ids(ctx)) {
         QKD_DEBUG("Failed to get QKD key");
-        ret = OQS_ERROR;
-        goto err;
-    }
-    if (ctx->key) {
-        size_t keylen = 0;
-        if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) <= 0) {
-            QKD_DEBUG("Failed to get key length");
-            ret = OQS_ERROR;
-            goto err;
-        }
-        if (keylen != QKD_KEY_SIZE) {
-            QKD_DEBUG("Unexpected key length: %zu", keylen);
-            ret = OQS_ERROR;
-            goto err;
-        }
-        if (EVP_PKEY_get_raw_private_key(ctx->key, key_out, &keylen) <= 0) {
-            QKD_DEBUG("Failed to extract raw key material");
-            ret = OQS_ERROR;
-            goto err;
-        }
-    } else {
-        QKD_DEBUG("No key available in context");
         ret = OQS_ERROR;
         goto err;
     }
@@ -177,32 +156,39 @@ static int oqs_qkd_get_encaps_key(QKD_CTX *ctx, const unsigned char *key_id_in,
         ret = OQS_ERROR;
         goto err;
     }
-    if (ctx->key) {
-        size_t keylen = 0;
-        if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) <= 0) {
-            QKD_DEBUG("Failed to get key length");
-            ret = OQS_ERROR;
-            goto err;
-        }
-        if (keylen != QKD_KEY_SIZE) {
-            QKD_DEBUG("Unexpected key length: %zu", keylen);
-            ret = OQS_ERROR;
-            goto err;
-        }
-        if (EVP_PKEY_get_raw_private_key(ctx->key, key_out, &keylen) <= 0) {
-            QKD_DEBUG("Failed to extract raw key material");
-            ret = OQS_ERROR;
-            goto err;
-        }
-    } else {
-        QKD_DEBUG("No key available in context");
-        ret = OQS_ERROR;
-        goto err;
-    }
 #else
     #error "ETSI API not defined"
 #endif // ETSI_004_API
 #endif // QKD_KEY_ID_CH
+
+    // Common EVP_PKEY key extraction for all cases
+    if (!ctx->key) {
+        QKD_DEBUG("No key available in context");
+        ret = OQS_ERROR;
+        goto err;
+    }
+    
+    size_t keylen = 0;
+    if (EVP_PKEY_get_raw_private_key(ctx->key, NULL, &keylen) <= 0) {
+        QKD_DEBUG("Failed to get key length");
+        ret = OQS_ERROR;
+        goto err;
+    }
+    
+    if (keylen != QKD_KEY_SIZE) {
+        QKD_DEBUG("Unexpected key length: %zu (expected %d)", keylen, QKD_KEY_SIZE);
+        ret = OQS_ERROR;
+        goto err;
+    }
+    
+    if (EVP_PKEY_get_raw_private_key(ctx->key, key_out, &keylen) <= 0) {
+        QKD_DEBUG("Failed to extract raw key material");
+        ret = OQS_ERROR;
+        goto err;
+    }
+    
+    QKD_DEBUG("Successfully extracted QKD key (%d bytes) from EVP_PKEY during encapsulation", QKD_KEY_SIZE);
+    return ret;
 
 err:
     return ret;
