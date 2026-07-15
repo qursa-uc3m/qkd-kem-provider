@@ -1,144 +1,101 @@
-if (WIN32)
-    cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
-else()
-    cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-endif()
+cmake_minimum_required(VERSION 3.16)
 
-project(qkd-kem-provider LANGUAGES C)
-set(OQSPROVIDER_VERSION_TEXT "0.1.0-dev")
-set(CMAKE_C_STANDARD 11)
-set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
+project(qkd-kem-provider VERSION 0.2.0 LANGUAGES C)
 
-# Set ETSI API version options
-option(ETSI_004_API "Use ETSI 004 API" OFF)
-option(ETSI_014_API "Use ETSI 014 API" ON)
-
-# Make sure only one is enabled
-if(ETSI_004_API AND ETSI_014_API)
-    message(FATAL_ERROR "Only one ETSI API version can be enabled at a time")
-endif()
-
-if(ETSI_004_API)
-    add_definitions(-DETSI_004_API)
-    message(STATUS "Using ETSI 004 API")
-elseif(ETSI_014_API)
-    add_definitions(-DETSI_014_API)
-    message(STATUS "Using ETSI 014 API")
-else()
-    # Default to 014 if none specified
-    add_definitions(-DETSI_014_API)
-    message(STATUS "Defaulting to ETSI 014 API")
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS "Creating Debug build with OQS-Debug env vars enabled")
-else()
-    message(STATUS "Creating Release build")
-    add_definitions( -DNDEBUG )
-endif()
-
-if(MSVC)
-  set(CMAKE_EXE_LINKER_FLAGS 
-      "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
-  add_definitions(-DOQS_PROVIDER_NOATOMIC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-  set(OQS_ADDL_SOCKET_LIBS ws2_32.lib gdi32.lib crypt32.lib)
-else()
-  add_compile_options(-Wunused-function)
-  set(OQS_ADDL_SOCKET_LIBS "")
-endif()
-
-option(OQS_KEM_ENCODERS "Provide encoders (and decoders) for KEM algorithms " OFF)
-if(${OQS_KEM_ENCODERS})
-    message(STATUS "Build provides support for encoding KEMs")
-    add_compile_definitions( OQS_KEM_ENCODERS )
-endif()
-
-option(QKD_KEY_ID_CH "Use channel-based key IDs" OFF)
-if(QKD_KEY_ID_CH)
-    add_compile_definitions(QKD_KEY_ID_CH)
-    message(STATUS "Building with channel-based key IDs")
-endif()
-
-option(NOPUBKEY_IN_PRIVKEY "Do not include public keys in private key structures/PKCS#8 " OFF)
-if(${NOPUBKEY_IN_PRIVKEY})
-    message(STATUS "Build will not store public keys alongside private keys in PKCS#8 structures")
-    add_compile_definitions( NOPUBKEY_IN_PRIVKEY )
-else()
-    message(STATUS "Build will store public keys in PKCS#8 structures")
-endif()
-
-option(OQS_PROVIDER_BUILD_STATIC "Build a static library instead of a shared library" OFF)
-if(OQS_PROVIDER_BUILD_STATIC AND BUILD_SHARED_LIBS)
-  message(FATAL_ERROR "`OQS_PROVIDER_BUILD_STATIC` is not compatible with `BUILD_SHARED_LIBS`.")
-endif()
-
-include(CheckLibraryExists)
-include(CheckFunctionExists)
-
-# Add required includes and install locations for openssl
-find_package(OpenSSL 3.0 REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
-if (WIN32)
-# get_filename_component seems to fail when facing windows paths
-# so use new(er) cmake_path instruction there
-cmake_path(GET OPENSSL_CRYPTO_LIBRARY PARENT_PATH OQS_MODULES_PARENT_PATH)
-cmake_path(APPEND OQS_MODULES_PARENT_PATH "ossl-modules" OUTPUT_VARIABLE OPENSSL_MODULES_PATH)
-else()
-get_filename_component(OPENSSL_LIB_DIR ${OPENSSL_CRYPTO_LIBRARY} DIRECTORY)
-set(OPENSSL_MODULES_PATH ${OPENSSL_LIB_DIR}/ossl-modules)
-endif()
-
-# Add required include for liboqs
-find_package(liboqs REQUIRED)
-get_target_property(LIBOQS_INCLUDE_DIR OQS::oqs INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(LIBOQS_LIBRARY_TYPE OQS::oqs TYPE)
-message(STATUS "liboqs found: Include dir at ${LIBOQS_INCLUDE_DIR} (${LIBOQS_LIBRARY_TYPE})")
-include_directories(${LIBOQS_INCLUDE_DIR})
-
-# Add required include and library for qkd-etsi-api. Prefer the API-specific
-# names used by dual-API wrapper installations and retain the historical name
-# as a fallback for single-API installations.
-set(QKD_ETSI_API_ROOT "/usr/local" CACHE PATH "QKD ETSI API installation prefix")
-if(ETSI_004_API)
-    set(QKD_ETSI_API_LIBRARY_NAMES
-        qkd-etsi004-api-c-wrapper
-        qkd-etsi-api-c-wrapper)
-else()
-    set(QKD_ETSI_API_LIBRARY_NAMES
-        qkd-etsi014-api-c-wrapper
-        qkd-etsi-api-c-wrapper)
-endif()
-find_path(QKD_ETSI_API_INCLUDE_DIR
-    NAMES qkd-etsi-api-c-wrapper/qkd_etsi_api.h
-    PATHS ${QKD_ETSI_API_ROOT}/include
-    REQUIRED)
-find_library(QKD_ETSI_API_LIB
-    NAMES ${QKD_ETSI_API_LIBRARY_NAMES}
-    PATHS ${QKD_ETSI_API_ROOT}/lib ${QKD_ETSI_API_ROOT}/lib64
-    REQUIRED)
-include_directories(${QKD_ETSI_API_INCLUDE_DIR})
-message(STATUS "QKD ETSI API found: ${QKD_ETSI_API_LIB}")
-
-# Hints the compiler on the fact that the provider is being compiled into a static library.
-function(targets_set_static_provider)
-  foreach(target ${ARGN})
-    target_compile_definitions(${target} PRIVATE "OQS_PROVIDER_STATIC")
-    # Link UUID library to all targets
-    target_link_libraries(${target} PRIVATE ${UUID_LIB})
-    if(NOT "${target}" STREQUAL "qkdkemprovider")
-      target_link_libraries(${target} PRIVATE qkdkemprovider)
-    endif()
-  endforeach()
-endfunction()
-
-# Provider module
-add_subdirectory(oqsprov)
-
-# Testing
 include(CTest)
-enable_testing()
-add_subdirectory(test)
+include(GNUInstallDirs)
 
-# Examples
-add_subdirectory(examples)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(ETSI_004_API "Use the ETSI GS QKD 004 API" OFF)
+option(ETSI_014_API "Use the ETSI GS QKD 014 API" ON)
+option(QKD_KEY_ID_CH "Carry the QKD key identifier in the TLS key share" OFF)
+set(QKD_BACKEND "simulated" CACHE STRING "QKD backend")
+set(QKD_ETSI_API_SOURCE_DIR "" CACHE PATH
+    "Optional qkd-etsi-api-c-wrapper source directory")
+
+if((ETSI_004_API AND ETSI_014_API) OR
+   (NOT ETSI_004_API AND NOT ETSI_014_API))
+  message(FATAL_ERROR "Enable exactly one of ETSI_004_API or ETSI_014_API")
+endif()
+if(ETSI_004_API AND NOT QKD_KEY_ID_CH)
+  message(FATAL_ERROR
+    "ETSI 004 requires QKD_KEY_ID_CH=ON so both peers can join the stream before GET_KEY")
+endif()
+
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto SSL)
+
+if(NOT QKD_ETSI_API_SOURCE_DIR AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../qkd-etsi-api-c-wrapper/CMakeLists.txt")
+  set(QKD_ETSI_API_SOURCE_DIR
+      "${CMAKE_CURRENT_SOURCE_DIR}/../qkd-etsi-api-c-wrapper")
+endif()
+
+if(QKD_ETSI_API_SOURCE_DIR)
+  set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(ENABLE_ETSI004 ${ETSI_004_API} CACHE BOOL "" FORCE)
+  set(ENABLE_ETSI014 ${ETSI_014_API} CACHE BOOL "" FORCE)
+  add_subdirectory("${QKD_ETSI_API_SOURCE_DIR}"
+                   "${CMAKE_BINARY_DIR}/qkd-etsi-api" EXCLUDE_FROM_ALL)
+  add_compile_definitions(QKDKEM_QKD_FLAT_HEADERS)
+
+  if(TARGET qkd-etsi004-api-c-wrapper AND ETSI_004_API)
+    set(QKD_ETSI_API_TARGET qkd-etsi004-api-c-wrapper)
+  elseif(TARGET qkd-etsi014-api-c-wrapper AND ETSI_014_API)
+    set(QKD_ETSI_API_TARGET qkd-etsi014-api-c-wrapper)
+  elseif(TARGET qkd-etsi-api-c-wrapper)
+    set(QKD_ETSI_API_TARGET qkd-etsi-api-c-wrapper)
+  else()
+    message(FATAL_ERROR "The selected QKD ETSI API target was not created")
+  endif()
+  target_compile_definitions(${QKD_ETSI_API_TARGET} PRIVATE
+    _POSIX_C_SOURCE=200809L)
+else()
+  find_path(QKD_ETSI_API_INCLUDE_DIR
+    NAMES qkd-etsi-api-c-wrapper/qkd_etsi_api.h REQUIRED)
+  if(ETSI_004_API)
+    set(_qkd_library_names qkd-etsi004-api-c-wrapper qkd-etsi-api-c-wrapper)
+  else()
+    set(_qkd_library_names qkd-etsi014-api-c-wrapper qkd-etsi-api-c-wrapper)
+  endif()
+  find_library(QKD_ETSI_API_LIBRARY NAMES ${_qkd_library_names} REQUIRED)
+  add_library(qkd_etsi_api UNKNOWN IMPORTED)
+  set_target_properties(qkd_etsi_api PROPERTIES
+    IMPORTED_LOCATION "${QKD_ETSI_API_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${QKD_ETSI_API_INCLUDE_DIR}")
+  set(QKD_ETSI_API_TARGET qkd_etsi_api)
+endif()
+
+add_library(qkdkemprovider MODULE
+  qkdkem/algorithms.c
+  qkdkem/kem.c
+  qkdkem/keymgmt.c
+  qkdkem/provider.c
+  qkdkem/qkd.c)
+
+target_include_directories(qkdkemprovider PRIVATE qkdkem)
+target_compile_definitions(qkdkemprovider PRIVATE
+  QKDKEM_VERSION="${PROJECT_VERSION}"
+  $<$<BOOL:${ETSI_004_API}>:ETSI_004_API>
+  $<$<BOOL:${ETSI_014_API}>:ETSI_014_API>
+  $<$<BOOL:${QKD_KEY_ID_CH}>:QKD_KEY_ID_CH>)
+target_compile_options(qkdkemprovider PRIVATE
+  $<$<C_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Wconversion>)
+target_link_libraries(qkdkemprovider PRIVATE
+  OpenSSL::Crypto ${QKD_ETSI_API_TARGET})
+
+set_target_properties(qkdkemprovider PROPERTIES
+  PREFIX ""
+  OUTPUT_NAME "qkdkemprovider"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+install(TARGETS qkdkemprovider
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/ossl-modules"
+  RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/ossl-modules")
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()

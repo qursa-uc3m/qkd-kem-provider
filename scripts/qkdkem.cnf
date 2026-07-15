@@ -1,0 +1,14 @@
+openssl_conf = openssl_init
+
+[openssl_init]
+providers = providers
+
+[providers]
+default = default
+qkdkemprovider = qkdkemprovider
+
+[default]
+activate = 1
+
+[qkdkemprovider]
+activate = 1

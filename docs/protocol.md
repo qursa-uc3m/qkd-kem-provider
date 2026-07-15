@@ -1,39 +1,72 @@
-# QKD-KEM Protocol Specification
+# Protocol
 
-## Protocol Flow
+Each `qkd_<kem>` algorithm is exposed as one ephemeral TLS 1.3 KEM group. The
+provider owns the QKD exchange and delegates the post-quantum component to an
+independently loaded OpenSSL provider through EVP.
 
-<p align="center">
-  <img src="qkd_kem_flow.png" alt="QKD-KEM Protocol Flow" width="600">
-</p>
+## Components and roles
 
-### Key Generation (Alice)
+The two TLS peers derive their QKD roles from the KEM operation; no process-wide
+client/server flag is needed:
 
-Alice initiates the protocol by generating the key pair and retrieving initial QKD material:
+| OpenSSL object | TLS use | QKD role |
+| --- | --- | --- |
+| locally generated private key | produces a key share and later decapsulates | offer initiator |
+| imported peer public key | encapsulates to the received key share | offer responder |
 
-1. Generates KEM keypair `qkd_kem_key_new()`
-2. Initializes QKD context as initiator via `init_qkd_context(true)`
-3. Retrieves QKD key identifier:
-   - ETSI 004: Calls `OPEN_CONNECT()` to establish session and gets key ID
-   - ETSI 014: Calls `GET_KEY()` to obtain both key and key ID
-4. Transmits both public key and QKD key ID to Bob
+This remains correct when client and server run in the same process and during
+HelloRetryRequest, because the role belongs to the key object rather than the
+process.
 
-### Encapsulation (Bob)
+The inner KEM is selected from the aliases in `qkdkem/algorithms.h`. Fetches use
+`provider!=qkdkemprovider` by default to prevent recursion. The optional
+`QKDKEM_INNER_PROPERTIES` query can select a specific peer provider. A TLS group
+is advertised only if at least one of its inner aliases can be fetched.
 
-Bob performs encapsulation upon receiving Alice's public key and QKD key ID:
+## Wire format
 
-1. Calls `oqs_qkd_kem_encaps()`
-2. Initializes QKD context as responder via `init_qkd_context(false)`
-3. For ETSI 004:
-   - Establishes session with `OPEN_CONNECT()`
-   - Retrieves QKD key using `GET_KEY(key_id)`
-4. For ETSI 014:
-   - Retrieves QKD key using `GET_KEY_WITH_IDS()`
-5. Performs PQ encapsulation via `oqs_qs_kem_encaps_keyslot()`
+The public key share and KEM outputs preserve the version 0.1.x ordering:
 
-### Decapsulation (Alice)
+```text
+key_share  = pq_public     || qkd_key_id
+ciphertext = pq_ciphertext || qkd_key_id
+secret     = pq_secret     || qkd_key
+```
 
-Alice performs decapsulation upon receiving Bob's ciphertext:
+`qkd_key_id` is always 16 bytes and `qkd_key` is 32 bytes. PQ component sizes
+come from the selected inner provider and are checked before allocation and
+concatenation.
 
-1. Calls `oqs_qkd_kem_decaps()`
-2. For ETSI 004: Retrieves QKD key using `GET_KEY(key_id)`
-3. Recovers PQ shared secret via `oqs_qs_kem_decaps_keyslot()`
+With `QKD_KEY_ID_CH=OFF`, the key-share suffix is zero and the encapsulating
+peer obtains the QKD key and identifier. The identifier is carried in the
+ciphertext so the decapsulating peer can retrieve the same key. This mode is
+available with ETSI 014.
+
+With `QKD_KEY_ID_CH=ON`, key generation reserves the QKD identifier and carries
+it in the key share. Encapsulation accepts that offer and the private-key owner
+finishes it during decapsulation. The ciphertext retains the same 16-byte
+suffix for 0.1.x wire-length compatibility and fills it with the key-share
+identifier. ETSI 004 requires this mode because both peers must join the stream
+before `GET_KEY` can succeed.
+
+## Operation sequence
+
+1. The key-share peer fetches the inner KEM and generates an `EVP_PKEY`.
+2. The composite key-management implementation exports `pq_public` followed by
+   the QKD identifier field.
+3. The encapsulating peer imports the share, obtains the PQ ciphertext and
+   secret with `EVP_PKEY_encapsulate()`, and completes the matching QKD action.
+4. The private-key peer splits the ciphertext, calls
+   `EVP_PKEY_decapsulate()`, and retrieves or finishes the QKD key.
+5. Both sides pass `pq_secret || qkd_key` to the TLS 1.3 key schedule.
+
+Failures are fail-closed: unavailable inner algorithms are not advertised,
+malformed composite keys are rejected, output capacities are checked, and QKD
+material is cleansed when its key or operation context is released.
+
+## Combiner compatibility
+
+Version 0.2.0 deliberately keeps direct concatenation. Introducing a KDF-based
+hybrid combiner would change the derived TLS secret and therefore requires a new
+group definition and interoperability contract rather than an implementation
+refactor.
