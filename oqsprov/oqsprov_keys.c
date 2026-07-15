@@ -1299,14 +1299,15 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
         }
         if (key->keytype == KEY_TYPE_QKD_HYB_KEM) {
             // Calculate expected size for QKD hybrid private key
-            size_t expected_priv_len = 
-                key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key + 
+            size_t expected_priv_len =
+                key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_secret_key +
                 QKD_KEY_SIZE; // PQ key + QKD key
-                
-            if (pp1->data_size != expected_priv_len && 
+
+            if (pp1->data_size != expected_priv_len &&
                 key->privkeylen != pp1->data_size) {
-                QKD_DEBUG("Private key size mismatch: got %zu, expected %zu or %zu",
-                          pp1->data_size, expected_priv_len, key->privkeylen);
+                QKD_DEBUG(
+                    "Private key size mismatch: got %zu, expected %zu or %zu",
+                    pp1->data_size, expected_priv_len, key->privkeylen);
                 ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
                 return 0;
             }
@@ -1331,14 +1332,15 @@ int oqsx_key_fromdata(OQSX_KEY *key, const OSSL_PARAM params[],
         }
         if (key->keytype == KEY_TYPE_QKD_HYB_KEM) {
             // Calculate expected size for QKD hybrid public key
-            size_t expected_pub_len = 
-                key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key + 
+            size_t expected_pub_len =
+                key->oqsx_provider_ctx.oqsx_qs_ctx.kem->length_public_key +
                 QKD_KSID_SIZE; // PQ key + QKD key ID
-                
-            if (pp2->data_size != expected_pub_len && 
+
+            if (pp2->data_size != expected_pub_len &&
                 key->pubkeylen != pp2->data_size) {
-                QKD_DEBUG("Public key size mismatch: got %zu, expected %zu or %zu",
-                          pp2->data_size, expected_pub_len, key->pubkeylen);
+                QKD_DEBUG(
+                    "Public key size mismatch: got %zu, expected %zu or %zu",
+                    pp2->data_size, expected_pub_len, key->pubkeylen);
                 ERR_raise(ERR_LIB_USER, OQSPROV_R_INVALID_SIZE);
                 return 0;
             }
@@ -1432,43 +1434,47 @@ static int oqsx_key_gen_qkd(OQSX_KEY *key) {
 
 #ifdef ETSI_004_API
     const char *is_server = getenv("IS_TLS_SERVER");
-    
-    // Only the CLIENT (Alice/initiator) should establish connection during key generation
+
+    // Only the CLIENT (Alice/initiator) should establish connection during key
+    // generation
     if (is_server == NULL || strcmp(is_server, "0") == 0) {
         QKD_DEBUG("CLIENT: Establishing QKD connection during key generation");
-        
+
         // Client (Alice) establishes connection to get key ID
         if (!qkd_open(qkd_ctx)) {
             QKD_DEBUG("Failed to establish QKD connection");
             ret = QKD_ERR_PROTOCOL;
             goto err;
         }
-        
+
         // Store Alice's key ID
         memcpy(key->comp_pubkey[idx_qkd], qkd_ctx->key_id, QKD_KSID_SIZE);
-        
+
         QKD_DEBUG("CLIENT: Stored key ID:");
         for (int i = 0; i < QKD_KSID_SIZE; i++) {
-            fprintf(stderr, "%02x", ((unsigned char*)key->comp_pubkey[idx_qkd])[i]);
+            fprintf(stderr, "%02x",
+                    ((unsigned char *)key->comp_pubkey[idx_qkd])[i]);
         }
         fprintf(stderr, "\n");
-        
-        // Initialize private key to a known pattern (will be replaced during decapsulation)
+
+        // Initialize private key to a known pattern (will be replaced during
+        // decapsulation)
         unsigned char init_pattern[QKD_KEY_SIZE];
         for (size_t i = 0; i < QKD_KEY_SIZE; i++) {
             init_pattern[i] = (unsigned char)(i + 1);
         }
         memcpy(key->comp_privkey[idx_qkd], init_pattern, QKD_KEY_SIZE);
-        
+
     } else {
         QKD_DEBUG("SERVER: Deferring QKD connection until encapsulation");
-        
-        // Server (Bob) doesn't establish connection yet - waits for Alice's key ID
-        // Initialize with placeholder values
+
+        // Server (Bob) doesn't establish connection yet - waits for Alice's key
+        // ID Initialize with placeholder values
         memset(key->comp_pubkey[idx_qkd], 0, QKD_KSID_SIZE);
         memset(key->comp_privkey[idx_qkd], 0, QKD_KEY_SIZE);
-        
-        QKD_DEBUG("SERVER: Initialized with placeholder values, will use Alice's key ID later");
+
+        QKD_DEBUG("SERVER: Initialized with placeholder values, will use "
+                  "Alice's key ID later");
     }
 
 #elif defined(ETSI_014_API)

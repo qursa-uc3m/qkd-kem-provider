@@ -53,7 +53,7 @@ bool qkd_open(QKD_CTX *ctx) {
         QKD_DEBUG("ETSI004: Metadata_mimetype not initialized");
         return false;
     }
-    
+
     if (!ctx->metadata.Metadata_buffer) {
         QKD_DEBUG("ETSI004: Metadata_buffer not initialized");
         return false;
@@ -77,7 +77,6 @@ bool qkd_open(QKD_CTX *ctx) {
     QKD_DEBUG("ETSI004: OPEN_CONNECT returned result=%u status=%u", result,
               status);
 
-    
     // Print the key_id again to see if it was updated
     QKD_DEBUG("ETSI004: key_id after OPEN_CONNECT:");
     for (int i = 0; i < 16; i++) {
@@ -85,9 +84,9 @@ bool qkd_open(QKD_CTX *ctx) {
     }
     fprintf(stderr, "\n");
 
-    if (result == QKD_STATUS_SUCCESS || 
+    if (result == QKD_STATUS_SUCCESS ||
         result == QKD_STATUS_PEER_NOT_CONNECTED ||
-        status == QKD_STATUS_QOS_NOT_MET) {  // Accept QoS adjustments
+        status == QKD_STATUS_QOS_NOT_MET) { // Accept QoS adjustments
         ctx->is_connected = true;
         QKD_DEBUG("ETSI004: Connection established successfully");
         return true;
@@ -319,22 +318,22 @@ bool qkd_get_key(QKD_CTX *ctx) {
 
     // Debugging checks before GET_KEY call
     QKD_DEBUG("ETSI004: Pre-GET_KEY Checks");
-    
+
     // Check key_id
     if (!ctx->key_id) {
         QKD_DEBUG("ETSI004: key_id is NULL!");
         return false;
     }
-    
+
     QKD_DEBUG("ETSI004: key_id hex dump:");
     for (int i = 0; i < QKD_KSID_SIZE; i++) {
         fprintf(stderr, "%02x ", ctx->key_id[i]);
     }
     fprintf(stderr, "\n");
-    
+
     if (!ctx->metadata.Metadata_buffer) {
         QKD_DEBUG("ETSI004: metadata.Metadata_buffer is NULL!");
-        
+
         // Emergency metadata initialization if somehow it wasn't initialized
         ctx->metadata.Metadata_size = QKD_METADATA_MAX_SIZE;
         ctx->metadata.Metadata_buffer = calloc(1, QKD_METADATA_MAX_SIZE);
@@ -342,13 +341,14 @@ bool qkd_get_key(QKD_CTX *ctx) {
             QKD_DEBUG("ETSI004: Emergency metadata buffer allocation failed");
             return false;
         }
-        
+
         // Initialize with empty JSON
         memcpy(ctx->metadata.Metadata_buffer, "{}", 2);
         QKD_DEBUG("ETSI004: Emergency metadata initialization completed");
     } else {
-        QKD_DEBUG("ETSI004: metadata.Metadata_buffer is at address %p", ctx->metadata.Metadata_buffer);
-        
+        QKD_DEBUG("ETSI004: metadata.Metadata_buffer is at address %p",
+                  ctx->metadata.Metadata_buffer);
+
         // Check metadata content (first few bytes)
         QKD_DEBUG("ETSI004: First 8 bytes of metadata buffer:");
         for (int i = 0; i < 8 && i < ctx->metadata.Metadata_size; i++) {
@@ -356,7 +356,7 @@ bool qkd_get_key(QKD_CTX *ctx) {
         }
         fprintf(stderr, "\n");
     }
-    
+
     // Check connection state
     QKD_DEBUG("ETSI004: is_connected = %d", ctx->is_connected);
     QKD_DEBUG("ETSI004: is_initiator = %d", ctx->is_initiator);
@@ -444,12 +444,12 @@ bool qkd_get_key(QKD_CTX *ctx) {
 
         // Print the decoded key in hex
         QKD_DEBUG("ETSI014: Decoded key (hex dump):");
-    #if !defined(NDEBUG) && defined(DEBUG_QKD)
+#if !defined(NDEBUG) && defined(DEBUG_QKD)
         for (size_t i = 0; i < outlen; i++) {
             fprintf(stderr, "%02X ", decoded_key[i]);
         }
         fprintf(stderr, "\n");
-    #endif
+#endif
 
         if (is_zero) {
             QKD_DEBUG("ETSI014: Decoded key is all zeros");

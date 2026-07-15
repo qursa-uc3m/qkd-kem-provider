@@ -50,7 +50,7 @@ static int qkd_init_uris(QKD_CTX *ctx) {
         return OQS_ERROR;
     }
 
-    QKD_DEBUG("ETSI 004: Using URIs from environment: source=%s, dest=%s", 
+    QKD_DEBUG("ETSI 004: Using URIs from environment: source=%s, dest=%s",
               source_uri, dest_uri);
 
     // Store the URIs directly
@@ -74,7 +74,7 @@ static int qkd_init_uris(QKD_CTX *ctx) {
         return OQS_ERROR;
     }
 
-    QKD_DEBUG("ETSI 014: Using hostnames: master_kme=%s, slave_kme=%s", 
+    QKD_DEBUG("ETSI 014: Using hostnames: master_kme=%s, slave_kme=%s",
               master_kme, slave_kme);
 
     // Store hostnames
@@ -83,7 +83,8 @@ static int qkd_init_uris(QKD_CTX *ctx) {
     ctx->master_sae = OPENSSL_strdup(master_sae);
     ctx->slave_sae = OPENSSL_strdup(slave_sae);
 
-    if (!ctx->master_kme || !ctx->slave_kme || !ctx->master_sae || !ctx->slave_sae) {
+    if (!ctx->master_kme || !ctx->slave_kme || !ctx->master_sae ||
+        !ctx->slave_sae) {
         QKD_DEBUG("ETSI 014: Failed to allocate KME or SAE strings");
         goto err;
     }
@@ -100,8 +101,8 @@ static int qkd_init_uris(QKD_CTX *ctx) {
     }
 #endif
 
-    QKD_DEBUG("Final configuration: source_uri=%s, dest_uri=%s", 
-              ctx->source_uri ? ctx->source_uri : "NULL", 
+    QKD_DEBUG("Final configuration: source_uri=%s, dest_uri=%s",
+              ctx->source_uri ? ctx->source_uri : "NULL",
               ctx->dest_uri ? ctx->dest_uri : "NULL");
 
     return OQS_SUCCESS;
@@ -109,14 +110,33 @@ static int qkd_init_uris(QKD_CTX *ctx) {
 err:
 #ifdef ETSI_004_API
     // For ETSI 004: clean up directly allocated URIs
-    if (ctx->source_uri) { OPENSSL_free(ctx->source_uri); ctx->source_uri = NULL; }
-    if (ctx->dest_uri) { OPENSSL_free(ctx->dest_uri); ctx->dest_uri = NULL; }
+    if (ctx->source_uri) {
+        OPENSSL_free(ctx->source_uri);
+        ctx->source_uri = NULL;
+    }
+    if (ctx->dest_uri) {
+        OPENSSL_free(ctx->dest_uri);
+        ctx->dest_uri = NULL;
+    }
 #else
-    // For ETSI 014: clean up KME/SAE strings (URIs point to these, so they'll be cleaned too)
-    if (ctx->master_kme) { OPENSSL_free(ctx->master_kme); ctx->master_kme = NULL; }
-    if (ctx->slave_kme) { OPENSSL_free(ctx->slave_kme); ctx->slave_kme = NULL; }
-    if (ctx->master_sae) { OPENSSL_free(ctx->master_sae); ctx->master_sae = NULL; }
-    if (ctx->slave_sae) { OPENSSL_free(ctx->slave_sae); ctx->slave_sae = NULL; }
+    // For ETSI 014: clean up KME/SAE strings (URIs point to these, so they'll
+    // be cleaned too)
+    if (ctx->master_kme) {
+        OPENSSL_free(ctx->master_kme);
+        ctx->master_kme = NULL;
+    }
+    if (ctx->slave_kme) {
+        OPENSSL_free(ctx->slave_kme);
+        ctx->slave_kme = NULL;
+    }
+    if (ctx->master_sae) {
+        OPENSSL_free(ctx->master_sae);
+        ctx->master_sae = NULL;
+    }
+    if (ctx->slave_sae) {
+        OPENSSL_free(ctx->slave_sae);
+        ctx->slave_sae = NULL;
+    }
     ctx->source_uri = NULL;
     ctx->dest_uri = NULL;
     ctx->sae_id = NULL;
@@ -176,14 +196,15 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     }
 
 #ifdef ETSI_004_API
-    /* Initialize QoS parameters for ETSI 004 */
-    
-    // Define metadata max size if not already defined
-    #ifndef QKD_METADATA_MAX_SIZE
-    #define QKD_METADATA_MAX_SIZE 1024
-    #endif
-    
-    // Set default QoS parameters using the correct field names (lowercase for some)
+/* Initialize QoS parameters for ETSI 004 */
+
+// Define metadata max size if not already defined
+#ifndef QKD_METADATA_MAX_SIZE
+#define QKD_METADATA_MAX_SIZE 1024
+#endif
+
+    // Set default QoS parameters using the correct field names (lowercase for
+    // some)
     oqsx_key->qkd_ctx->qos.Key_chunk_size = QKD_KEY_SIZE;
     oqsx_key->qkd_ctx->qos.Timeout = 60000;
     oqsx_key->qkd_ctx->qos.Priority = 0;
@@ -192,14 +213,14 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     oqsx_key->qkd_ctx->qos.Jitter = 10;
     oqsx_key->qkd_ctx->qos.TTL = 3600;
     strcpy(oqsx_key->qkd_ctx->qos.Metadata_mimetype, "application/json");
-    
+
     if (!oqsx_key->qkd_ctx->qos.Metadata_mimetype) {
         QKD_DEBUG("Memory allocation for metadata mimetype failed");
         OPENSSL_free(oqsx_key->qkd_ctx);
         oqsx_key->qkd_ctx = NULL;
         return OQS_ERROR;
     }
-    
+
     // Override with environment variables if present
     const char *env_chunk_size = getenv("QKD_QOS_KEY_CHUNK_SIZE");
     const char *env_timeout = getenv("QKD_QOS_TIMEOUT");
@@ -208,18 +229,26 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     const char *env_min_bps = getenv("QKD_QOS_MIN_BPS");
     const char *env_jitter = getenv("QKD_QOS_JITTER");
     const char *env_ttl = getenv("QKD_QOS_TTL");
-    
-    if (env_chunk_size) oqsx_key->qkd_ctx->qos.Key_chunk_size = atoi(env_chunk_size);
-    if (env_timeout) oqsx_key->qkd_ctx->qos.Timeout = atoi(env_timeout);
-    if (env_priority) oqsx_key->qkd_ctx->qos.Priority = atoi(env_priority);
-    if (env_max_bps) oqsx_key->qkd_ctx->qos.Max_bps = atoi(env_max_bps);
-    if (env_min_bps) oqsx_key->qkd_ctx->qos.Min_bps = atoi(env_min_bps);
-    if (env_jitter) oqsx_key->qkd_ctx->qos.Jitter = atoi(env_jitter);
-    if (env_ttl) oqsx_key->qkd_ctx->qos.TTL = atoi(env_ttl);
-    
+
+    if (env_chunk_size)
+        oqsx_key->qkd_ctx->qos.Key_chunk_size = atoi(env_chunk_size);
+    if (env_timeout)
+        oqsx_key->qkd_ctx->qos.Timeout = atoi(env_timeout);
+    if (env_priority)
+        oqsx_key->qkd_ctx->qos.Priority = atoi(env_priority);
+    if (env_max_bps)
+        oqsx_key->qkd_ctx->qos.Max_bps = atoi(env_max_bps);
+    if (env_min_bps)
+        oqsx_key->qkd_ctx->qos.Min_bps = atoi(env_min_bps);
+    if (env_jitter)
+        oqsx_key->qkd_ctx->qos.Jitter = atoi(env_jitter);
+    if (env_ttl)
+        oqsx_key->qkd_ctx->qos.TTL = atoi(env_ttl);
+
     // Initialize metadata structure
     oqsx_key->qkd_ctx->metadata.Metadata_size = QKD_METADATA_MAX_SIZE;
-    oqsx_key->qkd_ctx->metadata.Metadata_buffer = OPENSSL_malloc(QKD_METADATA_MAX_SIZE);
+    oqsx_key->qkd_ctx->metadata.Metadata_buffer =
+        OPENSSL_malloc(QKD_METADATA_MAX_SIZE);
     if (!oqsx_key->qkd_ctx->metadata.Metadata_buffer) {
         QKD_DEBUG("Memory allocation for metadata buffer failed");
         OPENSSL_free(oqsx_key->qkd_ctx->qos.Metadata_mimetype);
@@ -227,14 +256,16 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
         oqsx_key->qkd_ctx = NULL;
         return OQS_ERROR;
     }
-    memset(oqsx_key->qkd_ctx->metadata.Metadata_buffer, 0, QKD_METADATA_MAX_SIZE);
-    
+    memset(oqsx_key->qkd_ctx->metadata.Metadata_buffer, 0,
+           QKD_METADATA_MAX_SIZE);
+
     // Do NOT call qkd_open() here
     // For ETSI 004:
     // - Alice will call qkd_open() during key generation (oqsx_key_gen_qkd)
     // - Bob will call qkd_open() during encapsulation (oqs_qkd_get_encaps_key)
     oqsx_key->qkd_ctx->is_connected = false;
-    QKD_DEBUG("ETSI 004: Context initialized, connection deferred to key generation/encapsulation");
+    QKD_DEBUG("ETSI 004: Context initialized, connection deferred to key "
+              "generation/encapsulation");
 #endif
 
 #ifdef ETSI_014_API
@@ -259,7 +290,8 @@ int oqs_init_qkd_context(OQSX_KEY *oqsx_key, bool is_initiator) {
     QKD_DEBUG("QKD context initialized successfully as %s",
               is_initiator ? "initiator" : "responder");
     QKD_DEBUG("INIT: Initiator role: %d", oqsx_key->qkd_ctx->is_initiator);
-    QKD_DEBUG("INIT: Connection will be established later during key operations");
+    QKD_DEBUG(
+        "INIT: Connection will be established later during key operations");
 
     return OQS_SUCCESS;
 }

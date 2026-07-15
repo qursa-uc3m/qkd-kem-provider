@@ -37,13 +37,13 @@ typedef struct {
 #elif defined(ETSI_014_API)
     unsigned char key_id[37]; // 36 chars for UUID + null terminator
 #endif
-    char *source_uri;         // URI for source KME
-    char *dest_uri;           // URI for destination KME
-    char *master_kme;         // Master KME hostname from env
-    char *slave_kme;          // Slave KME hostname from env
-    char *master_sae;         // Master SAE ID
-    char *slave_sae;          // Slave SAE ID
-    char *sae_id;             // SAE ID for this context
+    char *source_uri; // URI for source KME
+    char *dest_uri;   // URI for destination KME
+    char *master_kme; // Master KME hostname from env
+    char *slave_kme;  // Slave KME hostname from env
+    char *master_sae; // Master SAE ID
+    char *slave_sae;  // Slave SAE ID
+    char *sae_id;     // SAE ID for this context
     EVP_PKEY *key;
     bool is_initiator;
 #ifdef ETSI_004_API

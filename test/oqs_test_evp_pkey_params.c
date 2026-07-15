@@ -454,11 +454,13 @@ static int test_algorithm(OSSL_LIB_CTX *libctx, const char *algname) {
             goto free_pq_keypair;
         }
 
-        // For QKD hybrids, consider the test successful without classical verification
+        // For QKD hybrids, consider the test successful without classical
+        // verification
         ret = 0;
     } else {
         // For non-QKD hybrids, extract classical, PQ, and full keys
-        if (private_key_params_get_classical_keys(private_key, &classical_keypair)) {
+        if (private_key_params_get_classical_keys(private_key,
+                                                  &classical_keypair)) {
             goto free_private_key;
         }
 
@@ -471,11 +473,12 @@ static int test_algorithm(OSSL_LIB_CTX *libctx, const char *algname) {
         }
 
         // Verify consistency for non-QKD hybrids
-        if (!keypairs_verify_consistency(&classical_keypair, &pq_keypair, &full_keypair)) {
+        if (!keypairs_verify_consistency(&classical_keypair, &pq_keypair,
+                                         &full_keypair)) {
             ret = 0;
         }
 
-        goto cleanup;  // Skip to cleanup to handle all freeing
+        goto cleanup; // Skip to cleanup to handle all freeing
     }
 
     // Free resources for QKD hybrid case
