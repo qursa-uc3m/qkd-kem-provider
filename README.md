@@ -15,7 +15,7 @@ Kyber, or ML-KEM implementations it exposes.
 Requirements:
 
 - OpenSSL 3.x or 4.x
-- `qkd-etsi-api-c-wrapper`
+- [`qkd-etsi-api-c-wrapper`](https://github.com/qursa-uc3m/qkd-etsi-api-c-wrapper)
 
 If the QKD wrapper is checked out next to this repository, CMake finds it
 automatically. Otherwise install it or set `QKD_ETSI_API_SOURCE_DIR`.
