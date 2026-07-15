@@ -5,7 +5,55 @@
 #include <openssl/provider.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#ifndef ETSI_004_API
+#    ifdef QKDKEM_QKD_FLAT_HEADERS
+#        include <etsi014/api.h>
+#    else
+#        include <qkd-etsi-api-c-wrapper/etsi014/api.h>
+#    endif
+
+static char *duplicate_text(const char *text)
+{
+    size_t length = strlen(text) + 1;
+    char *copy = malloc(length);
+
+    if (copy)
+        memcpy(copy, text, length);
+    return copy;
+}
+
+static uint32_t malformed_get_key(const char *kme_hostname,
+                                  const char *slave_sae_id,
+                                  qkd_key_request_t *request,
+                                  qkd_key_container_t *container)
+{
+    static const char oversized_base64[]
+        = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    qkd_key_t *key;
+
+    (void)kme_hostname;
+    (void)slave_sae_id;
+    (void)request;
+    if (!container)
+        return QKD_STATUS_SERVER_ERROR;
+    container->keys = calloc(1, sizeof(*container->keys));
+    if (!container->keys)
+        return QKD_STATUS_SERVER_ERROR;
+    container->key_count = 1;
+    key = &container->keys[0];
+    key->key_ID = duplicate_text("12345678-1234-4234-8234-123456789abc");
+    key->key = duplicate_text(oversized_base64);
+    if (!key->key_ID || !key->key)
+        return QKD_STATUS_SERVER_ERROR;
+    return QKD_STATUS_OK;
+}
+
+static const struct qkd_014_backend malformed_backend
+    = {.name = "malformed-test", .get_key = malformed_get_key};
+#endif
 
 static int fail(const char *operation)
 {
@@ -35,6 +83,7 @@ int main(void)
     EVP_PKEY_CTX *ctx = NULL;
     EVP_PKEY *private_key = NULL;
     EVP_PKEY *public_key = NULL;
+    EVP_PKEY *rejected_key = NULL;
     unsigned char *encoded = NULL;
     unsigned char *ciphertext = NULL;
     unsigned char *encapsulated = NULL;
@@ -45,6 +94,9 @@ int main(void)
     size_t decapsulated_len = 0;
     size_t group_count = 0;
     int ok = 0;
+#ifndef ETSI_004_API
+    const struct qkd_014_backend *original_backend = NULL;
+#endif
 
     libctx = OSSL_LIB_CTX_new();
     if (!libctx)
@@ -70,6 +122,31 @@ int main(void)
     }
     EVP_PKEY_CTX_free(ctx);
     ctx = NULL;
+
+    ctx = EVP_PKEY_CTX_new_from_pkey(libctx, private_key, NULL);
+    if (!ctx || EVP_PKEY_encapsulate_init(ctx, NULL) > 0
+        || ERR_peek_last_error() == 0) {
+        fprintf(stderr, "generated-key encapsulation was not rejected\n");
+        goto done;
+    }
+    ERR_clear_error();
+    EVP_PKEY_CTX_free(ctx);
+    ctx = NULL;
+
+#if defined(QKD_KEY_ID_CH) && !defined(ETSI_004_API)
+    original_backend = get_active_014_backend();
+    register_qkd_014_backend(&malformed_backend);
+    ctx = EVP_PKEY_CTX_new_from_name(libctx, "qkd_mlkem768", NULL);
+    if (!ctx || EVP_PKEY_keygen_init(ctx) <= 0
+        || EVP_PKEY_generate(ctx, &rejected_key) > 0) {
+        fprintf(stderr, "oversized KME key was not rejected\n");
+        goto done;
+    }
+    register_qkd_014_backend(original_backend);
+    ERR_clear_error();
+    EVP_PKEY_CTX_free(ctx);
+    ctx = NULL;
+#endif
 
     encoded_len = EVP_PKEY_get1_encoded_public_key(private_key, &encoded);
     if (!encoded_len) {
@@ -98,8 +175,25 @@ int main(void)
                                 &encapsulated_len)
                <= 0)
         goto done;
+    if (EVP_PKEY_get_size(public_key) != (int)ciphertext_len) {
+        fprintf(stderr, "reported maximum size does not match ciphertext\n");
+        goto done;
+    }
     ciphertext = OPENSSL_malloc(ciphertext_len);
     encapsulated = OPENSSL_malloc(encapsulated_len);
+#if !defined(QKD_KEY_ID_CH) && !defined(ETSI_004_API)
+    original_backend = get_active_014_backend();
+    register_qkd_014_backend(&malformed_backend);
+    if (!ciphertext || !encapsulated
+        || EVP_PKEY_encapsulate(ctx, ciphertext, &ciphertext_len, encapsulated,
+                                &encapsulated_len)
+               > 0) {
+        fprintf(stderr, "oversized KME key was not rejected\n");
+        goto done;
+    }
+    register_qkd_014_backend(original_backend);
+    ERR_clear_error();
+#endif
     if (!ciphertext || !encapsulated
         || EVP_PKEY_encapsulate(ctx, ciphertext, &ciphertext_len, encapsulated,
                                 &encapsulated_len)
@@ -110,6 +204,21 @@ int main(void)
 
     EVP_PKEY_CTX_free(ctx);
     ctx = EVP_PKEY_CTX_new_from_pkey(libctx, private_key, NULL);
+#ifdef QKD_KEY_ID_CH
+    ciphertext[ciphertext_len - 1] ^= 1;
+    if (!ctx || EVP_PKEY_decapsulate_init(ctx, NULL) <= 0
+        || EVP_PKEY_decapsulate(ctx, NULL, &decapsulated_len, ciphertext,
+                                ciphertext_len)
+               > 0
+        || ERR_peek_last_error() == 0) {
+        fprintf(stderr, "mismatched QKD identifier was not rejected\n");
+        goto done;
+    }
+    ciphertext[ciphertext_len - 1] ^= 1;
+    ERR_clear_error();
+    EVP_PKEY_CTX_free(ctx);
+    ctx = EVP_PKEY_CTX_new_from_pkey(libctx, private_key, NULL);
+#endif
     if (!ctx || EVP_PKEY_decapsulate_init(ctx, NULL) <= 0
         || EVP_PKEY_decapsulate(ctx, NULL, &decapsulated_len, ciphertext,
                                 ciphertext_len)
@@ -129,11 +238,16 @@ int main(void)
         fprintf(stderr, "shared secrets differ\n");
 
 done:
+#ifndef ETSI_004_API
+    if (original_backend)
+        register_qkd_014_backend(original_backend);
+#endif
     if (!ok)
         ERR_print_errors_fp(stderr);
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(private_key);
     EVP_PKEY_free(public_key);
+    EVP_PKEY_free(rejected_key);
     OPENSSL_free(encoded);
     OPENSSL_free(ciphertext);
     OPENSSL_clear_free(encapsulated, encapsulated_len);

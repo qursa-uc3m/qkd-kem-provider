@@ -18,6 +18,11 @@ This remains correct when client and server run in the same process and during
 HelloRetryRequest, because the role belongs to the key object rather than the
 process.
 
+Consequently, encapsulation requires an imported peer public key. Attempting
+the common single-key EVP loopback pattern—encapsulating and decapsulating with
+the same locally generated `EVP_PKEY`—is rejected with an OpenSSL error. Export
+and import the public share into a separate `EVP_PKEY`, as a real TLS peer does.
+
 The inner KEM is selected from the aliases in `qkdkem/algorithms.h`. Fetches use
 `provider!=qkdkemprovider` by default to prevent recursion. The optional
 `QKDKEM_INNER_PROPERTIES` query can select a specific peer provider. A TLS group
@@ -63,6 +68,18 @@ before `GET_KEY` can succeed.
 Failures are fail-closed: unavailable inner algorithms are not advertised,
 malformed composite keys are rejected, output capacities are checked, and QKD
 material is cleansed when its key or operation context is released.
+
+PQ encapsulation and decapsulation run before QKD retrieval, so an inner-KEM
+failure does not consume scarce QKD material. In key-ID-in-ClientHello mode,
+however, generating a key share necessarily reserves or retrieves QKD material;
+an abandoned HelloRetryRequest share cannot be returned through ETSI 014.
+
+QKD identifiers in ClientHello are unauthenticated at the time the responder
+processes them. A replay can therefore cause a lookup at the slave KME. KME
+deployments should enforce one-time identifiers, authentication, rate limits,
+and bounded request timeouts. The provider compares the ciphertext identifier
+with the original key-share identifier before decapsulation, catching replay,
+cross-session substitution, and mode mismatch as early as possible.
 
 ## Combiner compatibility
 

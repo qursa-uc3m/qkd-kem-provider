@@ -42,6 +42,7 @@ typedef struct qkdkem_key {
     unsigned char qkd_key[QKD_KEY_SIZE];
     int has_private;
     int has_qkd_key;
+    CRYPTO_RWLOCK *lock;
     _Atomic int references;
 } QKDKEM_KEY;
 

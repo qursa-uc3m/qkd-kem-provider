@@ -1,5 +1,10 @@
 add_executable(provider_to_provider_test provider_to_provider_test.c)
-target_link_libraries(provider_to_provider_test PRIVATE OpenSSL::Crypto)
+target_link_libraries(provider_to_provider_test PRIVATE
+  OpenSSL::Crypto ${QKD_ETSI_API_TARGET})
+target_compile_definitions(provider_to_provider_test PRIVATE
+  $<$<BOOL:${ETSI_004_API}>:ETSI_004_API>
+  $<$<BOOL:${ETSI_014_API}>:ETSI_014_API>
+  $<$<BOOL:${QKD_KEY_ID_CH}>:QKD_KEY_ID_CH>)
 
 set(qkdkem_test_environment
   "OPENSSL_MODULES=$<TARGET_FILE_DIR:qkdkemprovider>"

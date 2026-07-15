@@ -166,26 +166,21 @@ static void uuid_format(const unsigned char binary[QKD_KSID_SIZE],
 static int base64_decode_key(const char *encoded,
                              unsigned char key[QKD_KEY_SIZE])
 {
+    static const size_t encoded_key_size = 44;
     size_t encoded_len;
-    size_t padding = 0;
-    unsigned char decoded[QKD_KEY_SIZE + 3];
+    unsigned char decoded[QKD_KEY_SIZE + 1];
     int decoded_len;
 
     if (!encoded)
         return 0;
     encoded_len = strlen(encoded);
-    if (!encoded_len || encoded_len % 4 != 0
-        || encoded_len > sizeof(decoded) * 2)
+    if (encoded_len != encoded_key_size || encoded[encoded_len - 1] != '='
+        || encoded[encoded_len - 2] == '=')
         return 0;
-    if (encoded_len && encoded[encoded_len - 1] == '=')
-        padding++;
-    if (encoded_len > 1 && encoded[encoded_len - 2] == '=')
-        padding++;
 
     decoded_len = EVP_DecodeBlock(decoded, (const unsigned char *)encoded,
                                   (int)encoded_len);
-    if (decoded_len < 0 || (size_t)decoded_len < padding
-        || (size_t)decoded_len - padding != QKD_KEY_SIZE) {
+    if (decoded_len != (int)sizeof(decoded)) {
         OPENSSL_cleanse(decoded, sizeof(decoded));
         return 0;
     }
@@ -364,6 +359,10 @@ int qkdkem_qkd_offer_finish(QKDKEM_QKD_SESSION *session,
     return 1;
 }
 
+/*
+ * The ETSI 004 variants below are retained to keep the adapter symmetric.
+ * Provider builds cannot call them because ETSI 004 requires QKD_KEY_ID_CH.
+ */
 int qkdkem_qkd_response_create(QKDKEM_QKD_SESSION *session,
                                unsigned char id[QKD_KSID_SIZE],
                                unsigned char key[QKD_KEY_SIZE])

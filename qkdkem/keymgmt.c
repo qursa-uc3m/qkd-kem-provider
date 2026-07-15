@@ -23,6 +23,11 @@ QKDKEM_KEY *qkdkem_key_new(QKDKEM_PROV_CTX *provctx,
     key = OPENSSL_zalloc(sizeof(*key));
     if (!key)
         return NULL;
+    key->lock = CRYPTO_THREAD_lock_new();
+    if (!key->lock) {
+        OPENSSL_free(key);
+        return NULL;
+    }
     key->provctx = provctx;
     key->algorithm = algorithm;
     atomic_init(&key->references, 1);
@@ -52,6 +57,7 @@ void qkdkem_key_free(void *keydata)
     EVP_PKEY_free(key->pq_key);
     qkdkem_qkd_session_free(key->qkd);
     OPENSSL_cleanse(key->qkd_key, sizeof(key->qkd_key));
+    CRYPTO_THREAD_lock_free(key->lock);
     OPENSSL_free(key);
 }
 
@@ -223,9 +229,9 @@ static int key_get_params(void *keydata, OSSL_PARAM params[])
         return 0;
     bits = (int)key->algorithm->security_bits;
     max_size = EVP_PKEY_get_size(key->pq_key);
-    if (max_size < 0 || max_size > INT_MAX - QKD_KEY_SIZE)
+    if (max_size < 0 || max_size > INT_MAX - QKD_KSID_SIZE)
         return 0;
-    max_size += QKD_KEY_SIZE;
+    max_size += QKD_KSID_SIZE;
 
     param = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_BITS);
     if (param && !OSSL_PARAM_set_int(param, bits))
