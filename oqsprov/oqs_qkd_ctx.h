@@ -15,5 +15,6 @@
 
 // QKD context initialization
 int oqs_init_qkd_context(OQSX_KEY *key, bool is_initiator);
+void oqs_qkd_context_free(QKD_CTX *ctx);
 
 #endif /* OQS_QKD_CTX_H */

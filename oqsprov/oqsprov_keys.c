@@ -1232,6 +1232,9 @@ void oqsx_key_free(OQSX_KEY *key) {
         OPENSSL_free(key->oqsx_provider_ctx.oqsx_evp_ctx);
     }
 
+    oqs_qkd_context_free(key->qkd_ctx);
+    key->qkd_ctx = NULL;
+
 #ifdef OQS_PROVIDER_NOATOMIC
     CRYPTO_THREAD_lock_free(key->lock);
 #endif

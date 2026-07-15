@@ -96,9 +96,28 @@ get_target_property(LIBOQS_LIBRARY_TYPE OQS::oqs TYPE)
 message(STATUS "liboqs found: Include dir at ${LIBOQS_INCLUDE_DIR} (${LIBOQS_LIBRARY_TYPE})")
 include_directories(${LIBOQS_INCLUDE_DIR})
 
-# Add required include for qkd-etsi-api
-find_library(QKD_ETSI_API_LIB NAMES qkd-etsi-api-c-wrapper PATHS /usr/local/lib REQUIRED)
-include_directories(/usr/local/include)
+# Add required include and library for qkd-etsi-api. Prefer the API-specific
+# names used by dual-API wrapper installations and retain the historical name
+# as a fallback for single-API installations.
+set(QKD_ETSI_API_ROOT "/usr/local" CACHE PATH "QKD ETSI API installation prefix")
+if(ETSI_004_API)
+    set(QKD_ETSI_API_LIBRARY_NAMES
+        qkd-etsi004-api-c-wrapper
+        qkd-etsi-api-c-wrapper)
+else()
+    set(QKD_ETSI_API_LIBRARY_NAMES
+        qkd-etsi014-api-c-wrapper
+        qkd-etsi-api-c-wrapper)
+endif()
+find_path(QKD_ETSI_API_INCLUDE_DIR
+    NAMES qkd-etsi-api-c-wrapper/qkd_etsi_api.h
+    PATHS ${QKD_ETSI_API_ROOT}/include
+    REQUIRED)
+find_library(QKD_ETSI_API_LIB
+    NAMES ${QKD_ETSI_API_LIBRARY_NAMES}
+    PATHS ${QKD_ETSI_API_ROOT}/lib ${QKD_ETSI_API_ROOT}/lib64
+    REQUIRED)
+include_directories(${QKD_ETSI_API_INCLUDE_DIR})
 message(STATUS "QKD ETSI API found: ${QKD_ETSI_API_LIB}")
 
 # Hints the compiler on the fact that the provider is being compiled into a static library.
@@ -106,8 +125,8 @@ function(targets_set_static_provider)
   foreach(target ${ARGN})
     target_compile_definitions(${target} PRIVATE "OQS_PROVIDER_STATIC")
     # Link UUID library to all targets
-    target_link_libraries(${target} PRIVATE ${UUID_LIB} qkdkemprovider)
-    if(NOT target STREQUAL qkdkemprovider)
+    target_link_libraries(${target} PRIVATE ${UUID_LIB})
+    if(NOT "${target}" STREQUAL "qkdkemprovider")
       target_link_libraries(${target} PRIVATE qkdkemprovider)
     endif()
   endforeach()
