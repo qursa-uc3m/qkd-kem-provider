@@ -15,8 +15,7 @@ EVP, retaining the QKD protocol and the 0.1.x TLS wire layout.**
   ordering, ciphertext ordering, and secret ordering are preserved.
 - The historical `OQS_CODEPOINT_QKD_*` overrides continue to work; new builds
   should use `QKDKEM_CODEPOINT_*`.
-- eFrodoKEM groups are new and use TLS private-use code points `0xfe00` through
-  `0xfe05`.
+- eFrodoKEM groups are new and use code points `0x3006` through `0x300b`.
 - ETSI 004 now rejects `QKD_KEY_ID_CH=OFF` at configure time. That combination
   cannot complete its two-party stream setup before synchronous encapsulation;
   ETSI 014 continues to support both layouts.

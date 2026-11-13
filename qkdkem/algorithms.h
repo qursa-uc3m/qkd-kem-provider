@@ -6,20 +6,20 @@
  * token, public name, group id, security bits, inner EVP aliases, env suffix
  *
  * Existing qkd_* names and code points retain their v1 values.  eFrodoKEM
- * groups use deterministic private-use code points and are new in v2.
+ * groups are new in v2 and follow the qkd_frodo* block.
  */
 #define QKDKEM_ALGORITHM_LIST(X)                                               \
-    X(efrodo640aes, "qkd_efrodo640aes", 0xfe00, 128, "efrodo640aes", NULL,     \
+    X(efrodo640aes, "qkd_efrodo640aes", 0x3006, 128, "efrodo640aes", NULL,     \
       NULL, "EFRODO640AES")                                                    \
-    X(efrodo640shake, "qkd_efrodo640shake", 0xfe01, 128, "efrodo640shake",     \
+    X(efrodo640shake, "qkd_efrodo640shake", 0x3007, 128, "efrodo640shake",     \
       NULL, NULL, "EFRODO640SHAKE")                                            \
-    X(efrodo976aes, "qkd_efrodo976aes", 0xfe02, 192, "efrodo976aes", NULL,     \
+    X(efrodo976aes, "qkd_efrodo976aes", 0x3008, 192, "efrodo976aes", NULL,     \
       NULL, "EFRODO976AES")                                                    \
-    X(efrodo976shake, "qkd_efrodo976shake", 0xfe03, 192, "efrodo976shake",     \
+    X(efrodo976shake, "qkd_efrodo976shake", 0x3009, 192, "efrodo976shake",     \
       NULL, NULL, "EFRODO976SHAKE")                                            \
-    X(efrodo1344aes, "qkd_efrodo1344aes", 0xfe04, 256, "efrodo1344aes", NULL,  \
+    X(efrodo1344aes, "qkd_efrodo1344aes", 0x300a, 256, "efrodo1344aes", NULL,  \
       NULL, "EFRODO1344AES")                                                   \
-    X(efrodo1344shake, "qkd_efrodo1344shake", 0xfe05, 256, "efrodo1344shake",  \
+    X(efrodo1344shake, "qkd_efrodo1344shake", 0x300b, 256, "efrodo1344shake",  \
       NULL, NULL, "EFRODO1344SHAKE")                                           \
     X(frodo640aes, "qkd_frodo640aes", 0x3000, 128, "frodo640aes", NULL, NULL,  \
       "FRODO640AES")                                                           \
