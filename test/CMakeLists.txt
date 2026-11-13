@@ -26,5 +26,8 @@ target_link_libraries(tls_test PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 add_test(NAME tls_qkd_mlkem768
   COMMAND tls_test "${CMAKE_CURRENT_SOURCE_DIR}/servercert.pem"
                    "${CMAKE_CURRENT_SOURCE_DIR}/serverkey.pem")
-set_tests_properties(tls_qkd_mlkem768 PROPERTIES ENVIRONMENT
-  "${qkdkem_test_environment}")
+add_test(NAME tls_qkd_mlkem768_hrr
+  COMMAND tls_test "${CMAKE_CURRENT_SOURCE_DIR}/servercert.pem"
+                   "${CMAKE_CURRENT_SOURCE_DIR}/serverkey.pem" hrr)
+set_tests_properties(tls_qkd_mlkem768 tls_qkd_mlkem768_hrr PROPERTIES
+  ENVIRONMENT "${qkdkem_test_environment}")
