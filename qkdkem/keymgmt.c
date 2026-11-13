@@ -378,6 +378,8 @@ static void *gen_key(void *vgenctx, OSSL_CALLBACK *callback, void *arg)
     if (!genctx)
         return NULL;
     key = qkdkem_key_new(genctx->provctx, genctx->algorithm);
+    if (!(genctx->selection & OSSL_KEYMGMT_SELECT_KEYPAIR))
+        return key;
     ctx = qkdkem_inner_ctx(genctx->provctx, genctx->algorithm);
     if (!key || !ctx || EVP_PKEY_keygen_init(ctx) <= 0
         || EVP_PKEY_generate(ctx, &key->pq_key) <= 0)
