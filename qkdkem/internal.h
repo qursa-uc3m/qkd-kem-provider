@@ -31,6 +31,7 @@ typedef struct {
 typedef struct {
     const OSSL_CORE_HANDLE *handle;
     OSSL_LIB_CTX *libctx;
+    char *inner_properties;
 } QKDKEM_PROV_CTX;
 
 typedef struct qkdkem_key {

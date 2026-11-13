@@ -3,6 +3,7 @@
 
 #include <openssl/ssl.h>
 
+#include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
 #    define strcasecmp _stricmp
@@ -151,6 +152,7 @@ static void provider_teardown(void *vprovctx)
     if (!provctx)
         return;
     OSSL_LIB_CTX_free(provctx->libctx);
+    OPENSSL_free(provctx->inner_properties);
     OPENSSL_free(provctx);
 }
 
@@ -174,13 +176,17 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
                        void **vprovctx)
 {
     QKDKEM_PROV_CTX *provctx = OPENSSL_zalloc(sizeof(*provctx));
+    const char *properties = getenv("QKDKEM_INNER_PROPERTIES");
 
     if (!provctx)
         return 0;
     provctx->handle = handle;
     provctx->libctx = OSSL_LIB_CTX_new_child(handle, dispatch);
-    if (!provctx->libctx) {
-        OPENSSL_free(provctx);
+    provctx->inner_properties = OPENSSL_strdup(
+        properties && *properties ? properties
+                                  : "provider!=" QKDKEM_PROVIDER_NAME);
+    if (!provctx->libctx || !provctx->inner_properties) {
+        provider_teardown(provctx);
         return 0;
     }
     *vprovctx = provctx;

@@ -18,13 +18,6 @@ const QKDKEM_ALGORITHM qkdkem_algorithms[]
 const size_t qkdkem_algorithm_count
     = sizeof(qkdkem_algorithms) / sizeof(qkdkem_algorithms[0]);
 
-static const char *inner_properties(void)
-{
-    const char *properties = getenv("QKDKEM_INNER_PROPERTIES");
-
-    return properties && *properties ? properties : "provider!=qkdkemprovider";
-}
-
 EVP_PKEY_CTX *qkdkem_inner_ctx(QKDKEM_PROV_CTX *provctx,
                                const QKDKEM_ALGORITHM *algorithm)
 {
@@ -35,8 +28,9 @@ EVP_PKEY_CTX *qkdkem_inner_ctx(QKDKEM_PROV_CTX *provctx,
         return NULL;
 
     for (i = 0; i < QKDKEM_INNER_COUNT && algorithm->inner_names[i]; i++) {
-        ctx = EVP_PKEY_CTX_new_from_name(
-            provctx->libctx, algorithm->inner_names[i], inner_properties());
+        ctx = EVP_PKEY_CTX_new_from_name(provctx->libctx,
+                                         algorithm->inner_names[i],
+                                         provctx->inner_properties);
         if (ctx)
             return ctx;
         ERR_clear_error();

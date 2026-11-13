@@ -4,7 +4,6 @@
 #include <openssl/core_names.h>
 
 #include <limits.h>
-#include <stdlib.h>
 #include <string.h>
 
 typedef struct {
@@ -106,11 +105,8 @@ static EVP_PKEY *import_inner_public(QKDKEM_KEY *key,
     EVP_PKEY_CTX *ctx;
     EVP_PKEY *pq_key = NULL;
     OSSL_PARAM params[2];
+    const char *properties = key->provctx->inner_properties;
     size_t i;
-    const char *properties = getenv("QKDKEM_INNER_PROPERTIES");
-
-    if (!properties || !*properties)
-        properties = "provider!=qkdkemprovider";
 
     for (i = 0; i < QKDKEM_INNER_COUNT && key->algorithm->inner_names[i]; i++) {
         ctx = EVP_PKEY_CTX_new_from_name(
